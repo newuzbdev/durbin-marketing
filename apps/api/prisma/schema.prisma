@@ -18,25 +18,26 @@ enum Role {
 }
 
 model School {
-  id           String   @id @default(cuid())
-  name         String
-  timezone     String   @default("Asia/Tashkent")
+  id               String   @id @default(cuid())
+  name             String
+  timezone         String   @default("Asia/Tashkent")
   // Tashqi CRM / Telegram bot lid yuborishi uchun maxfiy token
-  leadWebhookToken String @unique @default(cuid())
-  createdAt    DateTime @default(now())
+  leadWebhookToken String   @unique @default(cuid())
+  createdAt        DateTime @default(now())
 
-  memberships     Membership[]
-  metaConnections MetaConnection[]
-  igDailyInsights IgDailyInsight[]
-  igMedia         IgMedia[]
-  igConversations IgConversation[]
-  adCampaigns     AdCampaign[]
-  contentPosts    ContentPost[]
-  mediaAssets     MediaAsset[]
-  goals           Goal[]
-  leads           Lead[]
-  aiInsights      AiInsight[]
-  aiChatThreads   AiChatThread[]
+  memberships           Membership[]
+  metaConnections       MetaConnection[]
+  metaPendingSelections MetaPendingSelection[]
+  igDailyInsights       IgDailyInsight[]
+  igMedia               IgMedia[]
+  igConversations       IgConversation[]
+  adCampaigns           AdCampaign[]
+  contentPosts          ContentPost[]
+  mediaAssets           MediaAsset[]
+  goals                 Goal[]
+  leads                 Lead[]
+  aiInsights            AiInsight[]
+  aiChatThreads         AiChatThread[]
 }
 
 model User {
@@ -48,8 +49,8 @@ model User {
   externalId   String?  @unique
   createdAt    DateTime @default(now())
 
-  memberships  Membership[]
-  contentPosts ContentPost[]
+  memberships   Membership[]
+  contentPosts  ContentPost[]
   refreshTokens RefreshToken[]
 }
 
@@ -66,12 +67,12 @@ model Membership {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -90,6 +91,9 @@ model MetaConnection {
   // INSTAGRAM: IG user id; ADS: act_XXXX
   externalId     String
   displayName    String
+  // INSTAGRAM: IG akkaunt bog'langan Facebook Page (DM shu orqali yuboriladi)
+  pageId         String?
+  avatarUrl      String?
   // AES-256-GCM bilan shifrlangan
   accessTokenEnc String
   expiresAt      DateTime?
@@ -100,6 +104,17 @@ model MetaConnection {
 
   @@unique([schoolId, type])
   @@index([externalId])
+}
+
+// OAuth callback'da bir nechta akkaunt topilsa, foydalanuvchi tanlaguncha user token shu yerda turadi
+model MetaPendingSelection {
+  id           String   @id @default(cuid())
+  schoolId     String
+  userTokenEnc String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 }
 
 // ─── Instagram ──────────────────────────────────────────────────
@@ -149,22 +164,23 @@ model IgMedia {
 }
 
 model IgConversation {
-  id              String    @id @default(cuid())
-  schoolId        String
-  externalId      String
+  id                String    @id @default(cuid())
+  schoolId          String
+  // Graph API conversation id (webhook orqali kelgan yangi suhbatda hali bo'lmaydi)
+  externalId        String?
   // Suhbatdoshning IG scoped id (IGSID)
-  participantId   String
-  participantName String
+  participantId     String
+  participantName   String
   participantAvatar String?
-  lastMessageAt   DateTime
+  lastMessageAt     DateTime
   // Oxirgi kiruvchi xabar vaqti — 24 soatlik javob oynasi uchun
-  lastInboundAt   DateTime?
-  unreadCount     Int       @default(0)
+  lastInboundAt     DateTime?
+  unreadCount       Int       @default(0)
 
   school   School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   messages IgMessage[]
 
-  @@unique([schoolId, externalId])
+  @@unique([schoolId, participantId])
   @@index([schoolId, lastMessageAt])
 }
 
@@ -176,7 +192,8 @@ enum MessageDirection {
 model IgMessage {
   id             String           @id @default(cuid())
   conversationId String
-  externalId     String?          @unique
+  // Meta message id — bir IG akkaunt bir nechta maktabga ulangan bo'lishi mumkin, shuning uchun suhbat ichida unique
+  externalId     String?
   direction      MessageDirection
   text           String
   sentAt         DateTime
@@ -185,6 +202,7 @@ model IgMessage {
 
   conversation IgConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  @@unique([conversationId, externalId])
   @@index([conversationId, sentAt])
 }
 
@@ -204,7 +222,7 @@ model AdCampaign {
   name        String
   status      CampaignStatus
   objective   String
-  dailyBudget Int?           // tiyin/cent — hisob valyutasining eng kichik birligida
+  dailyBudget Int? // tiyin/cent — hisob valyutasining eng kichik birligida
   startTime   DateTime?
   stopTime    DateTime?
   createdAt   DateTime       @default(now())

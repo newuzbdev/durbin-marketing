@@ -74,9 +74,22 @@ These patterns each appear in several places in the codebase. New code should fo
   not in `proxy.ts`.
 - User feedback goes through `sonner` toasts. UI strings come from `uz` (`apps/web/src/messages/uz.ts:2`) and are not hard-coded.
 
-## 7. External integrations (planned; the design is fixed)
+## 7. External integrations (Meta)
 
-- Meta access sits behind a `MetaClient` interface with `MockMetaClient` and `GraphMetaClient`, selected by
-  `META_MODE=mock|live`. The mock mode is the primary mode until Meta App Review passes.
-- Webhooks verify `X-Hub-Signature-256` against the raw body. `rawBody: true` is already enabled (`apps/api/src/main.ts:7`).
-- Long-running and scheduled work (publishing posts, syncs, token refresh, AI analysis) goes into BullMQ jobs, not request handlers.
+- All Meta access goes through the `MetaClient` interface (`apps/api/src/meta/meta-client.ts`), injected by the
+  `META_CLIENT` token. `META_MODE` picks `GraphMetaClient` or `MockMetaClient` (`apps/api/src/meta/meta.module.ts:13`).
+  Graph-specific metric names and response shapes stay inside the implementations. New Meta features add a method
+  to the interface **and** to the mock, so the mock stays a full stand-in until App Review passes.
+- The mock is deterministic: same day gives the same numbers. Sync code relies on this for idempotency tests.
+- OAuth `state` is HMAC-signed and carries `schoolId`, `userId`, and `returnOrigin` (`apps/api/src/common/signed-state.ts`).
+  The callback is `@Public()` and always redirects to the web with `?connected=1`, `?select=`, or `?error=<code>`. It never throws.
+- Sync is **upsert by `externalId`**, so it is idempotent. Every sync re-reads the last few days, and only one sync
+  runs per school at a time (`apps/api/src/instagram/instagram-sync.service.ts:27`). It is scheduled in-process with
+  `@Cron` (`:44`, `:50`). BullMQ is reserved for post publishing.
+- One IG account may be connected to several schools. External ids are unique **per parent**, not globally
+  (for example `@@unique([conversationId, externalId])` on `IgMessage`).
+- Switching or disconnecting an account purges that school's synced IG data (`apps/api/src/meta/meta-connections.service.ts:144`).
+- Webhooks are `@Public()`. They verify `X-Hub-Signature-256` against `req.rawBody`
+  (`apps/api/src/webhooks/meta-webhook.controller.ts:58`) and always answer 200 after verifying, so Meta does not retry.
+- Meta platform rules are enforced on the server, not only in the UI. For example, the 24-hour DM reply window
+  (`apps/api/src/instagram/dm.service.ts:10`) returns a 409.

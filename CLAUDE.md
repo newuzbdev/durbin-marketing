@@ -8,9 +8,10 @@ Instagram Business and Facebook Ads accounts. The product has six parts: Dashboa
 auto-publishing), Maqsadlar (lead/follower/reach goals), and AI Yordamchi (a Claude-powered
 assistant).
 
-**Status:** phase 1 (foundation) is done: auth, tenancy, schema, and the app shell. All six section
-pages are placeholders (`apps/web/src/app/marketing/*/page.tsx`). The phased roadmap is in
-`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`.
+**Status:** phases 1–2 are done: foundation (auth, tenancy, schema, app shell) and Meta connection +
+Instagram (OAuth, sync, stats, posts, DM, webhook). The other five section pages are still placeholders.
+Roadmap: Kontent Plan → Maqsadlar → Facebook Ads → AI → Dashboard → App Review/deploy
+(`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`). Meta App setup: `docs/meta-app-setup.md`.
 
 **UI language is Uzbek (Latin).** All user-facing strings, including API error messages and code
 comments, are written in Uzbek.
@@ -24,7 +25,9 @@ comments, are written in Uzbek.
 - **DB:** PostgreSQL through Prisma 7 with the `@prisma/adapter-pg` driver adapter. The client is
   generated into `apps/api/src/generated/prisma` (gitignored)
 - **Shared:** `zod` v4 schemas and enums in `packages/shared`
-- **Planned:** BullMQ/Redis (jobs), S3/R2 (media), Meta Graph API, Anthropic SDK (already installed)
+- **Meta:** Graph API behind `MetaClient` (`apps/api/src/meta/meta-client.ts`); `META_MODE=mock|live`.
+  Periodic sync runs in-process with `@nestjs/schedule`, so Redis is not needed yet
+- **Planned:** BullMQ/Redis (post publishing), S3/R2 (media), Anthropic SDK (already installed)
 
 > Next 16, Nest 12, Prisma 7, and zod 4 each have breaking changes compared with older versions.
 > Before writing Next code, read `apps/web/AGENTS.md` and the docs in `apps/web/node_modules/next/dist/docs/`.

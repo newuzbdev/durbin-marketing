@@ -20,6 +20,8 @@ export function toIsoDate(d: Date): string {
 /** [from, to] — ikkala chegara ham kiradi */
 export function periodRange(period: Period, now = new Date()): { from: Date; to: Date } {
   const today = startOfUtcDay(now);
+  if (period === 'last_7d') return { from: addDays(today, -6), to: today };
+  if (period === 'last_30d') return { from: addDays(today, -29), to: today };
   if (period === 'this_week') {
     const dow = (today.getUTCDay() + 6) % 7; // dushanba = 0
     return { from: addDays(today, -dow), to: today };
@@ -30,4 +32,17 @@ export function periodRange(period: Period, now = new Date()): { from: Date; to:
   const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1));
   const to = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0));
   return { from, to };
+}
+
+/** Taqqoslash uchun: shu uzunlikdagi, darhol oldingi davr */
+export function previousRange(range: { from: Date; to: Date }): { from: Date; to: Date } {
+  const days = Math.round((range.to.getTime() - range.from.getTime()) / 86_400_000) + 1;
+  return { from: addDays(range.from, -days), to: addDays(range.from, -1) };
+}
+
+/** [from, to] oralig'idagi har bir kun (UTC) */
+export function eachDay(from: Date, to: Date): Date[] {
+  const days: Date[] = [];
+  for (let d = startOfUtcDay(from); d <= to; d = addDays(d, 1)) days.push(d);
+  return days;
 }

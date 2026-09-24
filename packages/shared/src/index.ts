@@ -27,8 +27,11 @@ export const CAMPAIGN_OBJECTIVES = [
 ] as const;
 export type CampaignObjective = (typeof CAMPAIGN_OBJECTIVES)[number];
 
-export const PERIODS = ['this_week', 'this_month', 'last_month'] as const;
+export const PERIODS = ['last_7d', 'last_30d', 'this_week', 'this_month', 'last_month'] as const;
 export type Period = (typeof PERIODS)[number];
+
+export const periodQuerySchema = z.object({ period: z.enum(PERIODS).default('last_30d') });
+export type PeriodQuery = z.infer<typeof periodQuerySchema>;
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Sana formati: YYYY-MM-DD');
 
@@ -144,3 +147,75 @@ export const chatMessageSchema = z.object({
   message: z.string().min(1).max(4000),
 });
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
+
+// ─── Instagram API javoblari ────────────────────────────────────
+
+export const IG_MEDIA_TYPES = ['IMAGE', 'VIDEO', 'CAROUSEL', 'REEL', 'STORY'] as const;
+export type IgMediaType = (typeof IG_MEDIA_TYPES)[number];
+
+export interface MetaConnectionDto {
+  type: 'INSTAGRAM' | 'ADS';
+  externalId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  lastSyncedAt: string | null;
+  expiresAt: string | null;
+}
+
+export interface IgOverviewDto {
+  range: { from: string; to: string };
+  totals: { reach: number; views: number; profileViews: number };
+  previousTotals: { reach: number; views: number; profileViews: number };
+  followers: { current: number; change: number };
+  series: { date: string; reach: number; views: number; followers: number }[];
+}
+
+export interface IgMediaDto {
+  id: string;
+  type: IgMediaType;
+  caption: string | null;
+  permalink: string | null;
+  thumbnailUrl: string | null;
+  postedAt: string;
+  reach: number;
+  views: number;
+  likes: number;
+  comments: number;
+  saves: number;
+  shares: number;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface IgConversationDto {
+  id: string;
+  participantName: string;
+  participantAvatar: string | null;
+  lastMessageAt: string;
+  lastMessagePreview: string | null;
+  unreadCount: number;
+  canReply: boolean;
+}
+
+export interface IgMessageDto {
+  id: string;
+  direction: 'INBOUND' | 'OUTBOUND';
+  text: string;
+  sentAt: string;
+}
+
+export const selectInstagramAccountSchema = z.object({
+  selectionId: z.string().min(1),
+  igUserId: z.string().min(1),
+});
+export type SelectInstagramAccountInput = z.infer<typeof selectInstagramAccountSchema>;
+
+export const mediaListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
