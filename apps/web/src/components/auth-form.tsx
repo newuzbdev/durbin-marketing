@@ -11,6 +11,10 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
 import { uz } from '@/messages/uz';
 
+// Faqat development: seed'dagi demo akkaunt login formasida oldindan to'ldiriladi (pnpm db:seed)
+const devLogin =
+  process.env.NODE_ENV === 'development' ? { email: 'demo@durbin.uz', password: 'demo12345' } : undefined;
+
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const { login, register } = useAuth();
   const router = useRouter();
@@ -56,11 +60,18 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
                 <Field name="name" label={uz.auth.name} />
               </>
             )}
-            <Field name="email" label={uz.auth.email} type="email" autoComplete="email" />
+            <Field
+              name="email"
+              label={uz.auth.email}
+              type="email"
+              autoComplete="email"
+              defaultValue={isLogin ? devLogin?.email : undefined}
+            />
             <Field
               name="password"
               label={uz.auth.password}
               type="password"
+              defaultValue={isLogin ? devLogin?.password : undefined}
               minLength={isLogin ? undefined : 8}
               autoComplete={isLogin ? 'current-password' : 'new-password'}
             />
