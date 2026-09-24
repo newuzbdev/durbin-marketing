@@ -1,0 +1,385 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth & tenant ──────────────────────────────────────────────
+
+enum Role {
+  OWNER
+  MANAGER
+  VIEWER
+}
+
+model School {
+  id           String   @id @default(cuid())
+  name         String
+  timezone     String   @default("Asia/Tashkent")
+  // Tashqi CRM / Telegram bot lid yuborishi uchun maxfiy token
+  leadWebhookToken String @unique @default(cuid())
+  createdAt    DateTime @default(now())
+
+  memberships     Membership[]
+  metaConnections MetaConnection[]
+  igDailyInsights IgDailyInsight[]
+  igMedia         IgMedia[]
+  igConversations IgConversation[]
+  adCampaigns     AdCampaign[]
+  contentPosts    ContentPost[]
+  mediaAssets     MediaAsset[]
+  goals           Goal[]
+  leads           Lead[]
+  aiInsights      AiInsight[]
+  aiChatThreads   AiChatThread[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String?
+  // Durbin SSO ulanganda to'ldiriladi
+  externalId   String?  @unique
+  createdAt    DateTime @default(now())
+
+  memberships  Membership[]
+  contentPosts ContentPost[]
+  refreshTokens RefreshToken[]
+}
+
+model Membership {
+  id       String @id @default(cuid())
+  userId   String
+  schoolId String
+  role     Role   @default(MANAGER)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, schoolId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Meta ulanishlari ───────────────────────────────────────────
+
+enum MetaConnectionType {
+  INSTAGRAM
+  ADS
+}
+
+model MetaConnection {
+  id             String             @id @default(cuid())
+  schoolId       String
+  type           MetaConnectionType
+  // INSTAGRAM: IG user id; ADS: act_XXXX
+  externalId     String
+  displayName    String
+  // AES-256-GCM bilan shifrlangan
+  accessTokenEnc String
+  expiresAt      DateTime?
+  lastSyncedAt   DateTime?
+  createdAt      DateTime           @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, type])
+  @@index([externalId])
+}
+
+// ─── Instagram ──────────────────────────────────────────────────
+
+model IgDailyInsight {
+  id           String   @id @default(cuid())
+  schoolId     String
+  date         DateTime @db.Date
+  reach        Int      @default(0)
+  views        Int      @default(0)
+  profileViews Int      @default(0)
+  followers    Int      @default(0)
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, date])
+}
+
+enum IgMediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL
+  REEL
+  STORY
+}
+
+model IgMedia {
+  id           String      @id @default(cuid())
+  schoolId     String
+  externalId   String
+  type         IgMediaType
+  caption      String?
+  permalink    String?
+  thumbnailUrl String?
+  postedAt     DateTime
+  reach        Int         @default(0)
+  views        Int         @default(0)
+  likes        Int         @default(0)
+  comments     Int         @default(0)
+  saves        Int         @default(0)
+  shares       Int         @default(0)
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, externalId])
+  @@index([schoolId, postedAt])
+}
+
+model IgConversation {
+  id              String    @id @default(cuid())
+  schoolId        String
+  externalId      String
+  // Suhbatdoshning IG scoped id (IGSID)
+  participantId   String
+  participantName String
+  participantAvatar String?
+  lastMessageAt   DateTime
+  // Oxirgi kiruvchi xabar vaqti — 24 soatlik javob oynasi uchun
+  lastInboundAt   DateTime?
+  unreadCount     Int       @default(0)
+
+  school   School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  messages IgMessage[]
+
+  @@unique([schoolId, externalId])
+  @@index([schoolId, lastMessageAt])
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+model IgMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  externalId     String?          @unique
+  direction      MessageDirection
+  text           String
+  sentAt         DateTime
+  // OUTBOUND bo'lsa Durbin'dan kim yozgan
+  sentByUserId   String?
+
+  conversation IgConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, sentAt])
+}
+
+// ─── Facebook Ads ───────────────────────────────────────────────
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
+
+model AdCampaign {
+  id          String         @id @default(cuid())
+  schoolId    String
+  externalId  String
+  name        String
+  status      CampaignStatus
+  objective   String
+  dailyBudget Int?           // tiyin/cent — hisob valyutasining eng kichik birligida
+  startTime   DateTime?
+  stopTime    DateTime?
+  createdAt   DateTime       @default(now())
+
+  school   School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  insights AdCampaignDailyInsight[]
+
+  @@unique([schoolId, externalId])
+}
+
+model AdCampaignDailyInsight {
+  id          String   @id @default(cuid())
+  campaignId  String
+  date        DateTime @db.Date
+  spend       Int      @default(0) // eng kichik valyuta birligida
+  clicks      Int      @default(0)
+  reach       Int      @default(0)
+  impressions Int      @default(0)
+  leads       Int      @default(0)
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+}
+
+// ─── Kontent Plan ───────────────────────────────────────────────
+
+enum PostType {
+  IMAGE
+  VIDEO
+  REEL
+  STORY
+}
+
+enum PostStatus {
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  MISSED
+}
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  schoolId    String
+  key         String   @unique
+  url         String
+  contentType String
+  size        Int
+  createdAt   DateTime @default(now())
+
+  school School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  posts  ContentPost[]
+}
+
+model ContentPost {
+  id           String     @id @default(cuid())
+  schoolId     String
+  type         PostType
+  title        String
+  caption      String     @default("")
+  scheduledAt  DateTime
+  status       PostStatus @default(SCHEDULED)
+  autoPublish  Boolean    @default(true)
+  mediaAssetId String?
+  createdById  String
+  igMediaId    String?
+  publishedAt  DateTime?
+  error        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  school     School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  createdBy  User        @relation(fields: [createdById], references: [id])
+
+  @@index([schoolId, scheduledAt])
+}
+
+// ─── Maqsadlar & lidlar ─────────────────────────────────────────
+
+enum GoalType {
+  LEAD
+  FOLLOWER
+  REACH
+  AD_CLICK
+}
+
+model Goal {
+  id        String   @id @default(cuid())
+  schoolId  String
+  name      String
+  type      GoalType
+  target    Int
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, endDate])
+}
+
+enum LeadSource {
+  INSTAGRAM
+  FB_ADS
+  TELEGRAM
+  MANUAL
+  WEBHOOK
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  schoolId   String
+  source     LeadSource
+  // Qo'lda kiritishda bir yozuv bir nechta lidni bildirishi mumkin
+  count      Int        @default(1)
+  date       DateTime   @db.Date
+  name       String?
+  phone      String?
+  // Webhook / Lead Ads takrorlanishini oldini olish uchun
+  externalId String?
+  createdAt  DateTime   @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, source, externalId])
+  @@index([schoolId, date])
+}
+
+// ─── AI ─────────────────────────────────────────────────────────
+
+enum AiInsightKind {
+  ANALYSIS
+  CONTENT_SUGGESTION
+}
+
+model AiInsight {
+  id        String        @id @default(cuid())
+  schoolId  String
+  kind      AiInsightKind
+  content   String
+  createdAt DateTime      @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, kind, createdAt])
+}
+
+model AiChatThread {
+  id        String   @id @default(cuid())
+  schoolId  String
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+
+  school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  messages AiChatMessage[]
+
+  @@index([schoolId, userId])
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+model AiChatMessage {
+  id        String   @id @default(cuid())
+  threadId  String
+  role      ChatRole
+  content   String
+  createdAt DateTime @default(now())
+
+  thread AiChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
