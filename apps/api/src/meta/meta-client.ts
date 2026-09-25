@@ -1,4 +1,4 @@
-import type { IgMediaType } from '@durbin/shared';
+import type { IgMediaType, PostType } from '@durbin/shared';
 
 // Meta Graph API ustidagi abstraksiya. Ikkita implementatsiya:
 //  - GraphMetaClient  (META_MODE=live) — haqiqiy Graph API
@@ -67,6 +67,20 @@ export interface IgMessageItem {
   sentAt: Date;
 }
 
+export interface PublishMediaInput {
+  postType: PostType;
+  /** Meta serverlari yuklab oladigan ochiq URL */
+  mediaUrl: string;
+  isVideo: boolean;
+  /** Story uchun e'tiborsiz qoldiriladi */
+  caption: string;
+}
+
+export interface PublishedMedia {
+  externalId: string;
+  permalink: string | null;
+}
+
 export interface MetaClient {
   readonly mode: 'mock' | 'live';
 
@@ -89,6 +103,9 @@ export interface MetaClient {
   listConversations(account: IgAccountRef, limit: number): Promise<IgConversationItem[]>;
   listMessages(account: IgAccountRef, conversationId: string, limit: number): Promise<IgMessageItem[]>;
   sendMessage(account: IgAccountRef, recipientId: string, text: string): Promise<{ externalId: string }>;
+
+  /** Container yaratish → (video bo'lsa) tayyor bo'lishini kutish → chiqarish */
+  publishMedia(account: IgAccountRef, input: PublishMediaInput): Promise<PublishedMedia>;
 }
 
 export class MetaApiError extends Error {

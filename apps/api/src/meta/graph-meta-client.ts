@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import type { IgMediaType } from '@durbin/shared';
 import { addDays, eachDay, toIsoDate } from '../common/dates.js';
+import { mapLimit } from '../common/async.js';
 import {
   MetaApiError,
   type IgAccountRef,
@@ -11,6 +12,8 @@ import {
   type IgMessageItem,
   type InstagramAccount,
   type MetaClient,
+  type PublishedMedia,
+  type PublishMediaInput,
   type UserToken,
 } from './meta-client.js';
 
@@ -265,6 +268,35 @@ export class GraphMetaClient implements MetaClient {
     return { externalId: res.message_id };
   }
 
+  async publishMedia(account: IgAccountRef, input: PublishMediaInput): Promise<PublishedMedia> {
+    const auth = { access_token: account.accessToken };
+    const container = await this.request<{ id: string }>('POST', `/${account.igUserId}/media`, auth, containerBody(input));
+
+    // Video'ni Meta serverda qayta ishlaydi; rasm odatda darhol FINISHED bo'ladi
+    for (let attempt = 0; ; attempt++) {
+      const { status_code, status } = await this.get<{ status_code?: string; status?: string }>(`/${container.id}`, {
+        ...auth,
+        fields: 'status_code,status',
+      });
+      if (status_code === 'FINISHED' || status_code === undefined) break;
+      if (status_code === 'ERROR' || status_code === 'EXPIRED') {
+        throw new MetaApiError(`Media qayta ishlanmadi: ${status ?? status_code}`, 400);
+      }
+      if (attempt >= CONTAINER_POLL_ATTEMPTS) {
+        throw new MetaApiError('Media juda uzoq qayta ishlanmoqda (5 daqiqadan oshdi)', 504);
+      }
+      await sleep(CONTAINER_POLL_MS);
+    }
+
+    const published = await this.request<{ id: string }>('POST', `/${account.igUserId}/media_publish`, auth, {
+      creation_id: container.id,
+    });
+    const permalink = await this.get<{ permalink?: string }>(`/${published.id}`, { ...auth, fields: 'permalink' })
+      .then((r) => r.permalink ?? null)
+      .catch(() => null); // Post chiqdi — havola olinmasa ham muvaffaqiyat
+    return { externalId: published.id, permalink };
+  }
+
   private get<T>(path: string, params: Params): Promise<T> {
     return this.request<T>('GET', path, params);
   }
@@ -295,23 +327,27 @@ export class GraphMetaClient implements MetaClient {
   }
 }
 
+const CONTAINER_POLL_MS = 5_000;
+const CONTAINER_POLL_ATTEMPTS = 60;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Content Publishing API: feed'dagi video endi faqat REELS sifatida chiqariladi */
+export function containerBody(input: PublishMediaInput): Record<string, string | boolean> {
+  const media: Record<string, string> = { [input.isVideo ? 'video_url' : 'image_url']: input.mediaUrl };
+  if (input.postType === 'STORY') {
+    return { media_type: 'STORIES', ...media };
+  }
+  if (input.isVideo) {
+    return { media_type: 'REELS', ...media, caption: input.caption, share_to_feed: true };
+  }
+  return { ...media, caption: input.caption };
+}
+
 function mediaType(mediaType: string, productType?: string): IgMediaType {
   if (productType === 'REELS') return 'REEL';
   if (productType === 'STORY') return 'STORY';
   if (mediaType === 'CAROUSEL_ALBUM') return 'CAROUSEL';
   if (mediaType === 'VIDEO') return 'VIDEO';
   return 'IMAGE';
-}
-
-async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = [];
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++;
-      results[i] = await fn(items[i]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
 }

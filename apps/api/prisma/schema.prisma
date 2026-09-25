@@ -290,6 +290,7 @@ model ContentPost {
   mediaAssetId String?
   createdById  String
   igMediaId    String?
+  permalink    String?
   publishedAt  DateTime?
   error        String?
   createdAt    DateTime   @default(now())
@@ -300,6 +301,8 @@ model ContentPost {
   createdBy  User        @relation(fields: [createdById], references: [id])
 
   @@index([schoolId, scheduledAt])
+  // Publisher cron: muddati kelgan SCHEDULED postlar
+  @@index([status, scheduledAt])
 }
 
 // ─── Maqsadlar & lidlar ─────────────────────────────────────────

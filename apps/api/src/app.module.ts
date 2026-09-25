@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module.js';
 import { MetaModule } from './meta/meta.module.js';
 import { InstagramModule } from './instagram/instagram.module.js';
 import { WebhooksModule } from './webhooks/webhooks.module.js';
+import { StorageModule } from './storage/storage.module.js';
+import { ContentModule } from './content/content.module.js';
 import { HealthController } from './health.controller.js';
 
 @Module({
@@ -17,6 +19,8 @@ import { HealthController } from './health.controller.js';
     MetaModule,
     InstagramModule,
     WebhooksModule,
+    StorageModule,
+    ContentModule,
   ],
   controllers: [HealthController],
 })

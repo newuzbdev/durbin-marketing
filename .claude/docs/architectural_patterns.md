@@ -85,7 +85,8 @@ These patterns each appear in several places in the codebase. New code should fo
   The callback is `@Public()` and always redirects to the web with `?connected=1`, `?select=`, or `?error=<code>`. It never throws.
 - Sync is **upsert by `externalId`**, so it is idempotent. Every sync re-reads the last few days, and only one sync
   runs per school at a time (`apps/api/src/instagram/instagram-sync.service.ts:27`). It is scheduled in-process with
-  `@Cron` (`:44`, `:50`). BullMQ is reserved for post publishing.
+  `@Cron` (`:44`, `:50`). Post publishing uses the same in-process cron (`apps/api/src/content/content-publisher.service.ts`):
+  a post is claimed with `updateMany({id, status: SCHEDULED})` → PUBLISHING, so overlapping runs or instances never publish twice.
 - One IG account may be connected to several schools. External ids are unique **per parent**, not globally
   (for example `@@unique([conversationId, externalId])` on `IgMessage`).
 - Switching or disconnecting an account purges that school's synced IG data (`apps/api/src/meta/meta-connections.service.ts:144`).

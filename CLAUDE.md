@@ -8,10 +8,12 @@ Instagram Business and Facebook Ads accounts. The product has six parts: Dashboa
 auto-publishing), Maqsadlar (lead/follower/reach goals), and AI Yordamchi (a Claude-powered
 assistant).
 
-**Status:** phases 1–2 are done: foundation (auth, tenancy, schema, app shell) and Meta connection +
-Instagram (OAuth, sync, stats, posts, DM, webhook). The other five section pages are still placeholders.
-Roadmap: Kontent Plan → Maqsadlar → Facebook Ads → AI → Dashboard → App Review/deploy
-(`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`). Meta App setup: `docs/meta-app-setup.md`.
+**Status:** phases 1–3 are done: foundation (auth, tenancy, schema, app shell), Meta connection +
+Instagram (OAuth, sync, stats, posts, DM, webhook), and Kontent Plan (calendar, R2 uploads, auto-publish).
+The other four section pages are still placeholders.
+Roadmap: Maqsadlar → Facebook Ads → AI → Dashboard → App Review/deploy
+(`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`). Meta App setup: `docs/meta-app-setup.md`;
+media storage (R2): `docs/content-plan-setup.md`.
 
 **UI language is Uzbek (Latin).** All user-facing strings, including API error messages and code
 comments, are written in Uzbek.
@@ -27,7 +29,8 @@ comments, are written in Uzbek.
 - **Shared:** `zod` v4 schemas and enums in `packages/shared`
 - **Meta:** Graph API behind `MetaClient` (`apps/api/src/meta/meta-client.ts`); `META_MODE=mock|live`.
   Periodic sync runs in-process with `@nestjs/schedule`, so Redis is not needed yet
-- **Planned:** BullMQ/Redis (post publishing), S3/R2 (media), Anthropic SDK (already installed)
+- **Media:** S3-compatible storage (Cloudflare R2) behind `StorageService`; browsers upload via presigned PUT
+- **Planned:** Anthropic SDK (already installed). BullMQ/Redis only if publishing outgrows the in-process cron
 
 > Next 16, Nest 12, Prisma 7, and zod 4 each have breaking changes compared with older versions.
 > Before writing Next code, read `apps/web/AGENTS.md` and the docs in `apps/web/node_modules/next/dist/docs/`.

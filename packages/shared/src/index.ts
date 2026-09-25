@@ -53,27 +53,103 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 // ─── Kontent Plan ───────────────────────────────────────────────
 
+/** Instagram Content Publishing API qabul qiladigan formatlar (rasm faqat JPEG) */
+export const MEDIA_CONTENT_TYPES = ['image/jpeg', 'video/mp4', 'video/quicktime'] as const;
+export type MediaContentType = (typeof MEDIA_CONTENT_TYPES)[number];
+export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
+export const CAPTION_MAX = 2200;
+
+export type MediaKind = 'image' | 'video';
+export const mediaKind = (contentType: string): MediaKind => (contentType.startsWith('video/') ? 'video' : 'image');
+
+/** Har bir post turi qaysi media bilan chiqarilishi mumkin */
+export const POST_TYPE_MEDIA: Record<PostType, MediaKind[]> = {
+  IMAGE: ['image'],
+  VIDEO: ['video'],
+  REEL: ['video'],
+  STORY: ['image', 'video'],
+};
+
 export const createPostSchema = z.object({
   type: z.enum(POST_TYPES),
-  title: z.string().min(1).max(200),
-  caption: z.string().max(2200).default(''),
+  title: z.string().trim().min(1).max(200),
+  caption: z.string().max(CAPTION_MAX).default(''),
   scheduledAt: z.iso.datetime({ offset: true }),
-  mediaAssetId: z.string().optional(),
+  mediaAssetId: z.string().nullable().optional(),
   autoPublish: z.boolean().default(true),
 });
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 
-export const updatePostSchema = createPostSchema.partial();
+// `.partial()` emas: zod 4 da default'lar optional ichida ham qo'llanadi va yuborilmagan maydonlarni ezib yuboradi
+export const updatePostSchema = z.object({
+  type: z.enum(POST_TYPES).optional(),
+  title: z.string().trim().min(1).max(200).optional(),
+  caption: z.string().max(CAPTION_MAX).optional(),
+  scheduledAt: z.iso.datetime({ offset: true }).optional(),
+  mediaAssetId: z.string().nullable().optional(),
+  autoPublish: z.boolean().optional(),
+});
 export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 
-export const listPostsQuerySchema = z.object({ from: isoDate, to: isoDate });
+/** Kalendar oralig'i: brauzer mahalliy vaqtidagi chegaralar ISO ko'rinishida, [from, to) */
+export const listPostsQuerySchema = z
+  .object({ from: z.iso.datetime({ offset: true }), to: z.iso.datetime({ offset: true }) })
+  .refine((q) => new Date(q.to) > new Date(q.from), { message: "Oraliq noto'g'ri", path: ['to'] })
+  .refine((q) => new Date(q.to).getTime() - new Date(q.from).getTime() <= 45 * 86_400_000, {
+    message: 'Oraliq 45 kundan oshmasligi kerak',
+    path: ['to'],
+  });
+export type ListPostsQuery = z.infer<typeof listPostsQuerySchema>;
 
-export const uploadRequestSchema = z.object({
-  fileName: z.string().min(1).max(255),
-  contentType: z.string().regex(/^(image|video)\//, 'Faqat rasm yoki video'),
-  size: z.number().int().positive().max(1024 * 1024 * 1024),
-});
+export const uploadRequestSchema = z
+  .object({
+    fileName: z.string().min(1).max(255),
+    contentType: z.enum(MEDIA_CONTENT_TYPES, { error: 'Faqat JPEG rasm yoki MP4/MOV video' }),
+    size: z.number().int().positive(),
+  })
+  .refine((f) => f.size <= (mediaKind(f.contentType) === 'video' ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES), {
+    message: 'Fayl hajmi juda katta (rasm ≤ 8 MB, video ≤ 300 MB)',
+    path: ['size'],
+  });
 export type UploadRequestInput = z.infer<typeof uploadRequestSchema>;
+
+export interface MediaAssetDto {
+  id: string;
+  url: string;
+  contentType: string;
+  size: number;
+}
+
+export interface UploadTicketDto {
+  asset: MediaAssetDto;
+  /** Brauzer faylni shu URL'ga PUT qiladi, `Content-Type` sarlavhasi bilan */
+  uploadUrl: string;
+}
+
+export interface ContentPostDto {
+  id: string;
+  type: PostType;
+  title: string;
+  caption: string;
+  scheduledAt: string;
+  status: PostStatus;
+  autoPublish: boolean;
+  publishedAt: string | null;
+  permalink: string | null;
+  error: string | null;
+  media: MediaAssetDto | null;
+  createdBy: { id: string; name: string };
+  createdAt: string;
+}
+
+export interface ContentStatsDto {
+  total: number;
+  scheduled: number;
+  published: number;
+  missed: number;
+  failed: number;
+}
 
 // ─── Maqsadlar & lidlar ─────────────────────────────────────────
 

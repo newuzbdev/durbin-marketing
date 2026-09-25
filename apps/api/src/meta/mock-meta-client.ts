@@ -1,15 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import type { IgMediaType } from '@durbin/shared';
 import { addDays, eachDay, startOfUtcDay, toIsoDate } from '../common/dates.js';
-import type {
-  IgAccountRef,
-  IgConversationItem,
-  IgDailyMetrics,
-  IgMediaItem,
-  IgMessageItem,
-  InstagramAccount,
-  MetaClient,
-  UserToken,
+import {
+  MetaApiError,
+  type IgAccountRef,
+  type IgConversationItem,
+  type IgDailyMetrics,
+  type IgMediaItem,
+  type IgMessageItem,
+  type InstagramAccount,
+  type MetaClient,
+  type PublishedMedia,
+  type PublishMediaInput,
+  type UserToken,
 } from './meta-client.js';
 
 // META_MODE=mock: Meta App Review o'tguncha butun oqimni (OAuth → sync → UI) sinash uchun.
@@ -148,6 +151,15 @@ export class MockMetaClient implements MetaClient {
 
   async sendMessage(): Promise<{ externalId: string }> {
     return { externalId: `mock-mid-${randomUUID()}` };
+  }
+
+  async publishMedia(_account: IgAccountRef, input: PublishMediaInput): Promise<PublishedMedia> {
+    // Xatolik oqimini sinash uchun: fayl nomida "mock-fail" bo'lsa, Meta xatosini taqlid qiladi
+    if (input.mediaUrl.includes('mock-fail')) {
+      throw new MetaApiError('Media URL yuklab olinmadi (mock)', 400, 9004);
+    }
+    const id = randomUUID();
+    return { externalId: `mock-post-${id}`, permalink: `https://www.instagram.com/p/mock-${id.slice(0, 8)}/` };
   }
 }
 
