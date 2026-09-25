@@ -8,12 +8,13 @@ Instagram Business and Facebook Ads accounts. The product has six parts: Dashboa
 auto-publishing), Maqsadlar (lead/follower/reach goals), and AI Yordamchi (a Claude-powered
 assistant).
 
-**Status:** phases 1–6 are done: foundation (auth, tenancy, schema, app shell), Meta connection +
+**Status:** all six sections are built (phases 1–7): foundation (auth, tenancy, schema, app shell), Meta connection +
 Instagram (OAuth, sync, stats, posts, DM, webhook), Kontent Plan (calendar, R2 uploads, auto-publish),
 Maqsadlar (goals with computed progress; leads entered manually, from Instagram DMs, or via a school Telegram bot),
 Facebook Ads (ad account OAuth, campaign/insight sync, pause/start, campaign + ad set creation, Lead Ads), and
-AI Yordamchi (analysis, content suggestions, scripts, chat — Claude Sonnet 5 via Replicate). Dashboard is still a placeholder. Live Instagram DMs need App Review (Advanced Access); see memory.
-Roadmap: Dashboard → App Review/deploy
+AI Yordamchi (analysis, content suggestions, scripts, chat — Claude Sonnet 5 via Replicate), and Dashboard
+(KPIs, charts, goals, this week's content; DB-only, no Meta calls). Live Instagram DMs need App Review (Advanced Access); see memory.
+Remaining: deploy + Meta App Review
 (`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`). Meta App setup: `docs/meta-app-setup.md`;
 media storage (R2): `docs/content-plan-setup.md`.
 

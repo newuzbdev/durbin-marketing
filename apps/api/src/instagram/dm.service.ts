@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import type { IgConversationDto, IgMessageDto } from '@durbin/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { META_CLIENT, type MetaClient } from '../meta/meta-client.js';
@@ -25,6 +25,8 @@ export interface InboundWebhookMessage {
 
 @Injectable()
 export class DmService {
+  private readonly logger = new Logger(DmService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly connections: MetaConnectionsService,
@@ -101,41 +103,48 @@ export class DmService {
       where: { type: 'INSTAGRAM', externalId: event.igUserId },
       select: { schoolId: true },
     });
+    for (const { schoolId } of conns) {
+      // Bitta maktabdagi xato (masalan, shu payt o'chirilgan) boshqa maktablarga yozilishini to'xtatmasin
+      await this.ingestFor(schoolId, event).catch((err: Error) =>
+        this.logger.warn(`Webhook xabarini yozib bo'lmadi (school=${schoolId}): ${err.message}`),
+      );
+    }
+  }
+
+  private async ingestFor(schoolId: string, event: InboundWebhookMessage) {
     const inbound = !event.isEcho;
     const participantId = inbound ? event.senderId : event.recipientId;
     const sentAt = new Date(event.timestamp);
 
-    for (const { schoolId } of conns) {
-      const conv = await this.prisma.igConversation.upsert({
-        where: { schoolId_participantId: { schoolId, participantId } },
-        // Ism keyingi sync'da yangilanadi
-        create: { schoolId, participantId, participantName: participantId, lastMessageAt: sentAt },
-        update: {},
-      });
-      const exists = await this.prisma.igMessage.findUnique({
-        where: { conversationId_externalId: { conversationId: conv.id, externalId: event.mid } },
-      });
-      if (exists) continue;
+    const conv = await this.prisma.igConversation.upsert({
+      where: { schoolId_participantId: { schoolId, participantId } },
+      // Ism keyingi sync'da yangilanadi
+      create: { schoolId, participantId, participantName: participantId, lastMessageAt: sentAt },
+      update: {},
+    });
+    const exists = await this.prisma.igMessage.findUnique({
+      where: { conversationId_externalId: { conversationId: conv.id, externalId: event.mid } },
+    });
+    if (exists) return;
 
-      await this.prisma.$transaction([
-        this.prisma.igMessage.create({
-          data: {
-            conversationId: conv.id,
-            externalId: event.mid,
-            direction: inbound ? 'INBOUND' : 'OUTBOUND',
-            text: event.text,
-            sentAt,
-          },
-        }),
-        this.prisma.igConversation.update({
-          where: { id: conv.id },
-          data: {
-            lastMessageAt: sentAt > conv.lastMessageAt ? sentAt : conv.lastMessageAt,
-            ...(inbound ? { lastInboundAt: sentAt, unreadCount: { increment: 1 } } : {}),
-          },
-        }),
-      ]);
-    }
+    await this.prisma.$transaction([
+      this.prisma.igMessage.create({
+        data: {
+          conversationId: conv.id,
+          externalId: event.mid,
+          direction: inbound ? 'INBOUND' : 'OUTBOUND',
+          text: event.text,
+          sentAt,
+        },
+      }),
+      this.prisma.igConversation.update({
+        where: { id: conv.id },
+        data: {
+          lastMessageAt: sentAt > conv.lastMessageAt ? sentAt : conv.lastMessageAt,
+          ...(inbound ? { lastInboundAt: sentAt, unreadCount: { increment: 1 } } : {}),
+        },
+      }),
+    ]);
   }
 
   private async findConversation(schoolId: string, id: string) {

@@ -353,6 +353,28 @@ export const chatMessageSchema = z.object({
 });
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 
+// ─── Dashboard ──────────────────────────────────────────────────
+
+export const DASHBOARD_PERIODS = ['this_week', 'this_month', 'last_month'] as const;
+export type DashboardPeriod = (typeof DASHBOARD_PERIODS)[number];
+export const dashboardQuerySchema = z.object({ period: z.enum(DASHBOARD_PERIODS).default('this_week') });
+
+export interface DashboardDto {
+  range: { from: string; to: string };
+  instagram: {
+    reach: number;
+    previousReach: number;
+    followers: number;
+    followersChange: number;
+    series: { date: string; reach: number; followers: number }[];
+  } | null;
+  ads: { activeCampaigns: number; spend: number; previousSpend: number; currency: string } | null;
+  leads: { total: number; previous: number; bySource: Partial<Record<LeadSource, number>> };
+  goals: GoalDto[];
+  /** Joriy hafta (dushanba–yakshanba) — davr filtridan qat'i nazar */
+  contentWeek: { from: string; to: string } & ContentStatsDto;
+}
+
 export const AI_INSIGHT_KINDS = ['ANALYSIS', 'CONTENT_SUGGESTION'] as const;
 export type AiInsightKind = (typeof AI_INSIGHT_KINDS)[number];
 

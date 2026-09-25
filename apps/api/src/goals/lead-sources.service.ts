@@ -104,35 +104,43 @@ export class LeadSourcesService {
     });
     let created = 0;
     for (const { id: schoolId, igAutoLeadsSince: since } of schools) {
-      const convs = await this.prisma.igConversation.findMany({
-        where: { schoolId, createdAt: { gte: since! }, lastInboundAt: { gte: since! } },
-        select: { id: true, participantId: true, participantName: true },
+      // Bitta maktabdagi xato (masalan, shu payt o'chirilgan) qolganlarini to'xtatmasin
+      created += await this.captureInstagramFor(schoolId, since!).catch((err: Error) => {
+        this.logger.warn(`IG avto-lid xatosi (school=${schoolId}): ${err.message}`);
+        return 0;
       });
-      if (!convs.length) continue;
-      const firsts = await this.prisma.igMessage.groupBy({
-        by: ['conversationId'],
-        where: { conversationId: { in: convs.map((c) => c.id) }, direction: 'INBOUND' },
-        _min: { sentAt: true },
-      });
-      const firstBy = new Map(firsts.map((f) => [f.conversationId, f._min.sentAt]));
-      const data = convs.flatMap((c) => {
-        const first = firstBy.get(c.id);
-        if (!first || first < since!) return [];
-        return [
-          {
-            schoolId,
-            source: 'INSTAGRAM' as const,
-            externalId: igLeadId(c.participantId),
-            name: c.participantName,
-            date: startOfUtcDay(first),
-          },
-        ];
-      });
-      // Mavjudlari (shu jumladan qo'lda bekor qilingan count=0) o'zgarmaydi
-      const res = await this.prisma.lead.createMany({ data, skipDuplicates: true });
-      created += res.count;
     }
     return created;
+  }
+
+  private async captureInstagramFor(schoolId: string, since: Date): Promise<number> {
+    const convs = await this.prisma.igConversation.findMany({
+      where: { schoolId, createdAt: { gte: since }, lastInboundAt: { gte: since } },
+      select: { id: true, participantId: true, participantName: true },
+    });
+    if (!convs.length) return 0;
+    const firsts = await this.prisma.igMessage.groupBy({
+      by: ['conversationId'],
+      where: { conversationId: { in: convs.map((c) => c.id) }, direction: 'INBOUND' },
+      _min: { sentAt: true },
+    });
+    const firstBy = new Map(firsts.map((f) => [f.conversationId, f._min.sentAt]));
+    const data = convs.flatMap((c) => {
+      const first = firstBy.get(c.id);
+      if (!first || first < since) return [];
+      return [
+        {
+          schoolId,
+          source: 'INSTAGRAM' as const,
+          externalId: igLeadId(c.participantId),
+          name: c.participantName,
+          date: startOfUtcDay(first),
+        },
+      ];
+    });
+    // Mavjudlari (shu jumladan qo'lda bekor qilingan count=0) o'zgarmaydi
+    const res = await this.prisma.lead.createMany({ data, skipDuplicates: true });
+    return res.count;
   }
 
   // ─── Telegram bot ─────────────────────────────────────────────

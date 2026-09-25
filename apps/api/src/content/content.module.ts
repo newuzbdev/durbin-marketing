@@ -9,5 +9,6 @@ import { ContentPublisherService } from './content-publisher.service.js';
   imports: [MetaModule, InstagramModule],
   controllers: [ContentController],
   providers: [ContentService, ContentPublisherService],
+  exports: [ContentService],
 })
 export class ContentModule {}

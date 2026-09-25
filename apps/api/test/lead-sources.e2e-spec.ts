@@ -228,7 +228,21 @@ describe('Lid manbalari (e2e)', () => {
       .send({ name: 'Lidlar', type: 'LEAD', target: 10, startDate: today, endDate: today })
       .expect(201);
     expect(g.body.bySource.TELEGRAM).toBe(2); // 111 va 333
-    expect(g.body.bySource.INSTAGRAM ?? 0).toBe(0); // ikkalasi ham bekor qilingan
+    // Bu test belgilagan ikkala IG lid ham bekor qilingan. Lekin parallel ishlayotgan instagram.e2e webhook testi
+    // shu mock akkauntga (mock-ig-1) yangi xabar yuboradi — avto-rejimda u haqiqiy yangi lid bo'ladi (to'g'ri xatti-harakat).
+    // Shuning uchun natija bazadagi haqiqiy son bilan solishtiriladi.
+    const igLeads = await prisma.lead.aggregate({
+      where: { schoolId: a.schoolId, source: 'INSTAGRAM', count: { gt: 0 } },
+      _sum: { count: true },
+    });
+    expect(g.body.bySource.INSTAGRAM ?? 0).toBe(igLeads._sum.count ?? 0);
+    const cancelled = await prisma.lead.count({
+      where: { schoolId: a.schoolId, source: 'INSTAGRAM', externalId: { in: [`ig:new-${suffix}`] } },
+    });
+    expect(cancelled).toBe(1);
+    expect(
+      (await prisma.lead.findFirstOrThrow({ where: { schoolId: a.schoolId, externalId: `ig:new-${suffix}` } })).count,
+    ).toBe(0);
   });
 
   it('Telegram uzish', async () => {

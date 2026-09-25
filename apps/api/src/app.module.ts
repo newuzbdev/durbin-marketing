@@ -11,6 +11,7 @@ import { ContentModule } from './content/content.module.js';
 import { GoalsModule } from './goals/goals.module.js';
 import { AdsModule } from './ads/ads.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 import { HealthController } from './health.controller.js';
 
 @Module({
@@ -27,6 +28,7 @@ import { HealthController } from './health.controller.js';
     GoalsModule,
     AdsModule,
     AiModule,
+    DashboardModule,
   ],
   controllers: [HealthController],
 })
