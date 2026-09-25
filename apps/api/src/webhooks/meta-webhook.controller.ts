@@ -56,9 +56,12 @@ export class MetaWebhookController {
   @HttpCode(200)
   async receive(@Req() req: RawBodyRequest<Request>, @Headers('x-hub-signature-256') signature?: string) {
     if (!req.rawBody || !verifyMetaSignature(req.rawBody, signature, process.env.META_APP_SECRET ?? '')) {
+      this.logger.warn(`Webhook rad etildi: imzo ${signature ? "mos kelmadi" : "yo'q"}`);
       throw new ForbiddenException('Imzo noto‘g‘ri');
     }
     const body = req.body as InstagramWebhookBody;
+    const events = body.entry?.reduce((n, e) => n + (e.messaging?.length ?? 0), 0) ?? 0;
+    this.logger.log(`Webhook qabul qilindi: object=${body.object}, ${body.entry?.length ?? 0} entry, ${events} messaging hodisa`);
     if (body.object !== 'instagram') return 'ignored';
 
     for (const entry of body.entry ?? []) {

@@ -10,7 +10,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 
 process.env.META_MODE = 'mock';
 process.env.META_APP_SECRET ||= 'test-app-secret';
-process.env.META_WEBHOOK_VERIFY_TOKEN ||= 'verify-me';
+process.env.META_WEBHOOK_VERIFY_TOKEN = 'verify-me';
 process.env.ENCRYPTION_KEY ||= randomBytes(32).toString('base64');
 process.env.WEB_ORIGIN = 'http://localhost:3000';
 
@@ -84,9 +84,14 @@ describe('Instagram (e2e, mock)', () => {
         prisma.igMessage.count({ where: { conversation: { schoolId: a.schoolId } } }),
       ]);
     const before = await count();
+    // Instagramda o'chirilgan post (Meta ro'yxatida endi yo'q) keyingi sync'da o'chadi
+    await prisma.igMedia.create({
+      data: { schoolId: a.schoolId, externalId: 'deleted-on-ig', type: 'IMAGE', postedAt: new Date() },
+    });
     const second = await http().post('/api/instagram/sync').set(as(a)).expect(201);
     expect(second.body.newMessages).toBe(0);
     expect(await count()).toEqual(before);
+    expect(await prisma.igMedia.findFirst({ where: { schoolId: a.schoolId, externalId: 'deleted-on-ig' } })).toBeNull();
   });
 
   it('overview, media, top-5', async () => {

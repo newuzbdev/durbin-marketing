@@ -3,6 +3,7 @@ import type { IgConversationDto, IgMessageDto } from '@durbin/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { META_CLIENT, type MetaClient } from '../meta/meta-client.js';
 import { MetaConnectionsService } from '../meta/meta-connections.service.js';
+import { igLeadId } from '../goals/lead-sources.service.js';
 
 /** Meta qoidasi: foydalanuvchi oxirgi yozganidan keyin 24 soat ichida javob berish mumkin */
 export const REPLY_WINDOW_MS = 24 * 3_600_000;
@@ -36,6 +37,14 @@ export class DmService {
       orderBy: { lastMessageAt: 'desc' },
       include: { messages: { orderBy: { sentAt: 'desc' }, take: 1, select: { text: true } } },
     });
+    const leadIds = new Set(
+      (
+        await this.prisma.lead.findMany({
+          where: { schoolId, source: 'INSTAGRAM', count: { gt: 0 }, externalId: { in: rows.map((c) => igLeadId(c.participantId)) } },
+          select: { externalId: true },
+        })
+      ).map((l) => l.externalId),
+    );
     return rows.map((c) => ({
       id: c.id,
       participantName: c.participantName,
@@ -44,6 +53,7 @@ export class DmService {
       lastMessagePreview: c.messages[0]?.text ?? null,
       unreadCount: c.unreadCount,
       canReply: canReply(c.lastInboundAt),
+      isLead: leadIds.has(igLeadId(c.participantId)),
     }));
   }
 

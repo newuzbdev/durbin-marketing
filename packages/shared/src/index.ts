@@ -167,14 +167,84 @@ export const createGoalSchema = z
   });
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 
+// Sanalar tartibi servisda birlashtirilgan qiymatlar bo'yicha tekshiriladi
+export const updateGoalSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  type: z.enum(GOAL_TYPES).optional(),
+  target: z.number().int().positive().optional(),
+  startDate: isoDate.optional(),
+  endDate: isoDate.optional(),
+});
+export type UpdateGoalInput = z.infer<typeof updateGoalSchema>;
+
+/** Qo'lda kiritiladigan manbalar; WEBHOOK — faqat tizim orqali */
+export const MANUAL_LEAD_SOURCES = ['INSTAGRAM', 'FB_ADS', 'TELEGRAM', 'MANUAL'] as const;
+
 export const createLeadSchema = z.object({
-  source: z.enum(LEAD_SOURCES),
+  source: z.enum(MANUAL_LEAD_SOURCES),
   count: z.number().int().positive().max(100000).default(1),
   date: isoDate,
-  name: z.string().max(200).optional(),
-  phone: z.string().max(50).optional(),
+  name: z.string().trim().max(200).optional(),
+  phone: z.string().trim().max(50).optional(),
 });
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
+
+export const listLeadsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+// Avtomatik lid manbalari
+export const igAutoLeadsSchema = z.object({ enabled: z.boolean() });
+export type IgAutoLeadsInput = z.infer<typeof igAutoLeadsSchema>;
+
+export const connectTelegramSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .regex(/^\d{5,}:[A-Za-z0-9_-]{30,}$/, "Token noto'g'ri. @BotFather bergan to'liq tokenni kiriting (123456:ABC...)"),
+});
+export type ConnectTelegramInput = z.infer<typeof connectTelegramSchema>;
+
+export interface LeadSourcesDto {
+  instagram: { connected: boolean; autoLeads: boolean };
+  telegram: { username: string; link: string; lastError: string | null } | null;
+}
+
+export type GoalStatus = 'upcoming' | 'active' | 'achieved' | 'missed';
+
+export interface GoalDto {
+  id: string;
+  name: string;
+  type: GoalType;
+  target: number;
+  startDate: string;
+  endDate: string;
+  /** Hozirgacha erishilgan qiymat */
+  current: number;
+  /** 0–100, maqsaddan oshsa ham 100 */
+  percent: number;
+  remaining: number;
+  /** Bugun ham kiradi; tugagan bo'lsa 0 */
+  daysLeft: number;
+  /** Tekis sur'at bo'yicha bugungacha kutilgan qiymat */
+  expected: number;
+  status: GoalStatus;
+  /** FOLLOWER/REACH — Instagram, AD_CLICK — Facebook Ads ma'lumoti hali yo'q */
+  dataMissing: boolean;
+  /** Faqat LEAD: manbalar bo'yicha */
+  bySource: Partial<Record<LeadSource, number>> | null;
+}
+
+export interface LeadDto {
+  id: string;
+  source: LeadSource;
+  count: number;
+  date: string;
+  name: string | null;
+  phone: string | null;
+  createdAt: string;
+}
 
 export const webhookLeadSchema = z.object({
   source: z.enum(['TELEGRAM', 'WEBHOOK']).default('WEBHOOK'),
@@ -276,6 +346,8 @@ export interface IgConversationDto {
   lastMessagePreview: string | null;
   unreadCount: number;
   canReply: boolean;
+  /** Suhbatdosh lid sifatida belgilangan (qo'lda yoki avtomatik) */
+  isLead: boolean;
 }
 
 export interface IgMessageDto {

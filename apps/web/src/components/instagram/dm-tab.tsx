@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { InfoIcon, SendIcon } from 'lucide-react';
+import { InfoIcon, SendIcon, UserCheckIcon, UserPlusIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import type { IgConversationDto } from '@durbin/shared';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +13,7 @@ import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { fmtAgo, fmtTime } from '@/lib/format';
 import { useConversations, useMessages, useSendMessage } from '@/lib/queries/instagram';
+import { useMarkInstagramLead } from '@/lib/queries/goals';
 import { cn } from '@/lib/utils';
 import { uz } from '@/messages/uz';
 
@@ -70,7 +71,10 @@ function ConversationRow({ conv, active, onClick }: { conv: IgConversationDto; a
       </Avatar>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className={cn('truncate text-sm', unread && 'font-semibold')}>{conv.participantName}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className={cn('truncate text-sm', unread && 'font-semibold')}>{conv.participantName}</span>
+            {conv.isLead && <LeadBadge />}
+          </span>
           <span className="text-muted-foreground shrink-0 text-xs">{fmtAgo(conv.lastMessageAt)}</span>
         </div>
         <div className="flex items-center justify-between gap-2">
@@ -95,6 +99,7 @@ function Chat({ conv, onBack }: { conv: IgConversationDto; onBack: () => void })
   const { school } = useAuth();
   const messages = useMessages(conv.id);
   const send = useSendMessage(conv.id);
+  const markLead = useMarkInstagramLead(conv.id);
   const [text, setText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const canWrite = school?.role !== 'VIEWER';
@@ -121,7 +126,25 @@ function Chat({ conv, onBack }: { conv: IgConversationDto; onBack: () => void })
         <Button variant="ghost" size="sm" className="md:hidden" onClick={onBack}>
           ←
         </Button>
-        <span className="font-medium">{conv.participantName}</span>
+        <span className="min-w-0 flex-1 truncate font-medium">{conv.participantName}</span>
+        {canWrite && (
+          <Button
+            variant={conv.isLead ? 'secondary' : 'outline'}
+            size="sm"
+            disabled={markLead.isPending}
+            aria-pressed={conv.isLead}
+            onClick={() =>
+              markLead.mutate(!conv.isLead, {
+                onSuccess: (_, isLead) => toast.success(isLead ? t.marked : t.unmarked),
+                onError: (err) => toast.error(err instanceof ApiError ? err.message : uz.common.error),
+              })
+            }
+          >
+            {conv.isLead ? <UserCheckIcon aria-hidden /> : <UserPlusIcon aria-hidden />}
+            {conv.isLead ? t.unmarkLead : t.markLead}
+          </Button>
+        )}
+        {!canWrite && conv.isLead && <LeadBadge />}
       </header>
       <div className="flex-1 overflow-y-auto px-4 py-3">
         <ul className="grid gap-2">
@@ -170,5 +193,13 @@ function Chat({ conv, onBack }: { conv: IgConversationDto; onBack: () => void })
         </p>
       )}
     </>
+  );
+}
+
+function LeadBadge() {
+  return (
+    <span className="shrink-0 rounded border border-emerald-200 bg-emerald-50 px-1 text-[10px] font-medium text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-100">
+      {t.lead}
+    </span>
   );
 }

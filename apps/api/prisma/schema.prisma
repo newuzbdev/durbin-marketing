@@ -23,6 +23,8 @@ model School {
   timezone         String   @default("Asia/Tashkent")
   // Tashqi CRM / Telegram bot lid yuborishi uchun maxfiy token
   leadWebhookToken String   @unique @default(cuid())
+  // Yoqilgan bo'lsa — shu vaqtdan keyin birinchi marta yozgan har bir IG suhbatdosh lid hisoblanadi
+  igAutoLeadsSince DateTime?
   createdAt        DateTime @default(now())
 
   memberships           Membership[]
@@ -36,6 +38,7 @@ model School {
   mediaAssets           MediaAsset[]
   goals                 Goal[]
   leads                 Lead[]
+  telegramBot           TelegramBot?
   aiInsights            AiInsight[]
   aiChatThreads         AiChatThread[]
 }
@@ -176,6 +179,8 @@ model IgConversation {
   // Oxirgi kiruvchi xabar vaqti — 24 soatlik javob oynasi uchun
   lastInboundAt     DateTime?
   unreadCount       Int       @default(0)
+  // Durbin suhbatni birinchi marta ko'rgan payt (avtomatik lid qoidasi uchun)
+  createdAt         DateTime  @default(now())
 
   school   School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   messages IgMessage[]
@@ -354,6 +359,22 @@ model Lead {
 
   @@unique([schoolId, source, externalId])
   @@index([schoolId, date])
+}
+
+// Maktabning Telegram boti: /start bosgan va raqam yuborganlar TELEGRAM lid bo'ladi (getUpdates polling)
+model TelegramBot {
+  id           String   @id @default(cuid())
+  schoolId     String   @unique
+  botId        String
+  username     String
+  tokenEnc     String
+  // getUpdates offset uchun oxirgi qayta ishlangan update_id
+  lastUpdateId Int      @default(0)
+  // Token bekor qilingan va h.k. — UI'da ko'rsatiladi
+  lastError    String?
+  createdAt    DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 }
 
 // ─── AI ─────────────────────────────────────────────────────────

@@ -133,6 +133,15 @@ export class InstagramSyncService {
         }),
       ),
     );
+    // Instagramda o'chirilgan postlar — Meta xabar bermaydi, faqat ro'yxatda qaytmay qoladi
+    const window = deletedMediaWindow(items, MEDIA_LIMIT);
+    await this.prisma.igMedia.deleteMany({
+      where: {
+        schoolId,
+        externalId: { notIn: items.map((i) => i.externalId) },
+        ...(window ? { postedAt: { gte: window } } : {}),
+      },
+    });
     return items.length;
   }
 
@@ -192,6 +201,15 @@ export class InstagramSyncService {
     }
     return { conversations: conversations.length, newMessages };
   }
+}
+
+/**
+ * Qaysi oraliqdagi postlar Meta javobida bo'lishi shart: ro'yxat to'la bo'lsa (limitga yetgan) — faqat eng eski
+ * qaytgan postdan keyingilari (undan eskilari keyingi sahifada bo'lishi mumkin); to'la bo'lmasa — hammasi (null).
+ */
+export function deletedMediaWindow(items: { postedAt: Date }[], limit: number): Date | null {
+  if (items.length < limit) return null;
+  return new Date(Math.min(...items.map((i) => i.postedAt.getTime())));
 }
 
 function maxDate(dates: Date[]): Date | null {

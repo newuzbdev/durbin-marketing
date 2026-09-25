@@ -8,6 +8,7 @@ import { InstagramModule } from './instagram/instagram.module.js';
 import { WebhooksModule } from './webhooks/webhooks.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { ContentModule } from './content/content.module.js';
+import { GoalsModule } from './goals/goals.module.js';
 import { HealthController } from './health.controller.js';
 
 @Module({
@@ -21,6 +22,7 @@ import { HealthController } from './health.controller.js';
     WebhooksModule,
     StorageModule,
     ContentModule,
+    GoalsModule,
   ],
   controllers: [HealthController],
 })

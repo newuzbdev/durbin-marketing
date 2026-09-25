@@ -127,4 +127,15 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 tugmalarga cursor: pointer bermaydi — barcha bosiladigan elementlar uchun qaytariladi */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab']:not([aria-disabled='true']),
+  [role='option'],
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  label:has(> input[type='checkbox']:not(:disabled)),
+  summary {
+    cursor: pointer;
+  }
 }
