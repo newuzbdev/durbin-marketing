@@ -8,12 +8,12 @@ Instagram Business and Facebook Ads accounts. The product has six parts: Dashboa
 auto-publishing), Maqsadlar (lead/follower/reach goals), and AI Yordamchi (a Claude-powered
 assistant).
 
-**Status:** phases 1–5 are done: foundation (auth, tenancy, schema, app shell), Meta connection +
+**Status:** phases 1–6 are done: foundation (auth, tenancy, schema, app shell), Meta connection +
 Instagram (OAuth, sync, stats, posts, DM, webhook), Kontent Plan (calendar, R2 uploads, auto-publish),
 Maqsadlar (goals with computed progress; leads entered manually, from Instagram DMs, or via a school Telegram bot),
-and Facebook Ads (ad account OAuth, campaign/insight sync, pause/start, campaign + ad set creation, Lead Ads).
-AI and Dashboard are still placeholders. Live Instagram DMs need App Review (Advanced Access); see memory.
-Roadmap: AI → Dashboard → App Review/deploy
+Facebook Ads (ad account OAuth, campaign/insight sync, pause/start, campaign + ad set creation, Lead Ads), and
+AI Yordamchi (analysis, content suggestions, scripts, chat — Claude Sonnet 5 via Replicate). Dashboard is still a placeholder. Live Instagram DMs need App Review (Advanced Access); see memory.
+Roadmap: Dashboard → App Review/deploy
 (`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`). Meta App setup: `docs/meta-app-setup.md`;
 media storage (R2): `docs/content-plan-setup.md`.
 
@@ -32,7 +32,9 @@ comments, are written in Uzbek.
 - **Meta:** Graph API behind `MetaClient` (`apps/api/src/meta/meta-client.ts`); `META_MODE=mock|live`.
   Periodic sync runs in-process with `@nestjs/schedule`, so Redis is not needed yet
 - **Media:** S3-compatible storage (Cloudflare R2) behind `StorageService`; browsers upload via presigned PUT
-- **Planned:** Anthropic SDK (already installed). BullMQ/Redis only if publishing outgrows the in-process cron
+- **AI:** Replicate HTTP API (`apps/api/src/ai/replicate-client.ts`, `REPLICATE_API_TOKEN`, model `AI_MODEL`,
+  default `anthropic/claude-sonnet-5`). School data is summarized into the prompt by `AiContextService`
+- **Planned:** BullMQ/Redis only if publishing outgrows the in-process cron
 
 > Next 16, Nest 12, Prisma 7, and zod 4 each have breaking changes compared with older versions.
 > Before writing Next code, read `apps/web/AGENTS.md` and the docs in `apps/web/node_modules/next/dist/docs/`.

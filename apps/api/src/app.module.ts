@@ -10,6 +10,7 @@ import { StorageModule } from './storage/storage.module.js';
 import { ContentModule } from './content/content.module.js';
 import { GoalsModule } from './goals/goals.module.js';
 import { AdsModule } from './ads/ads.module.js';
+import { AiModule } from './ai/ai.module.js';
 import { HealthController } from './health.controller.js';
 
 @Module({
@@ -25,6 +26,7 @@ import { HealthController } from './health.controller.js';
     ContentModule,
     GoalsModule,
     AdsModule,
+    AiModule,
   ],
   controllers: [HealthController],
 })

@@ -349,9 +349,57 @@ export type ScriptRequestInput = z.infer<typeof scriptRequestSchema>;
 
 export const chatMessageSchema = z.object({
   threadId: z.string().optional(),
-  message: z.string().min(1).max(4000),
+  message: z.string().trim().min(1).max(4000),
 });
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
+
+export const AI_INSIGHT_KINDS = ['ANALYSIS', 'CONTENT_SUGGESTION'] as const;
+export type AiInsightKind = (typeof AI_INSIGHT_KINDS)[number];
+
+export type AiTone = 'positive' | 'negative' | 'neutral';
+
+export interface AiInsightItem {
+  title: string;
+  text: string;
+  tone: AiTone;
+}
+
+export interface AiInsightsDto {
+  kind: AiInsightKind;
+  items: AiInsightItem[];
+  createdAt: string;
+}
+
+export interface AiScriptScene {
+  time: string;
+  visual: string;
+  text: string;
+}
+
+export interface AiScriptDto {
+  caption: string;
+  hashtags: string[];
+  scenes: AiScriptScene[];
+}
+
+export interface AiThreadDto {
+  id: string;
+  title: string;
+  createdAt: string;
+}
+
+export interface AiMessageDto {
+  id: string;
+  role: 'USER' | 'ASSISTANT';
+  content: string;
+  createdAt: string;
+}
+
+export interface AiChatReplyDto {
+  threadId: string;
+  userMessage: AiMessageDto;
+  reply: AiMessageDto;
+}
 
 // ─── Instagram API javoblari ────────────────────────────────────
 

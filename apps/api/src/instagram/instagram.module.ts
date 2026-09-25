@@ -9,6 +9,6 @@ import { DmService } from './dm.service.js';
   imports: [MetaModule],
   controllers: [InstagramController],
   providers: [InstagramService, InstagramSyncService, DmService],
-  exports: [InstagramSyncService, DmService],
+  exports: [InstagramSyncService, DmService, InstagramService],
 })
 export class InstagramModule {}

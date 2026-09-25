@@ -8,6 +8,6 @@ import { AdsSyncService } from './ads-sync.service.js';
   imports: [MetaModule],
   controllers: [AdsController],
   providers: [AdsService, AdsSyncService],
-  exports: [AdsSyncService],
+  exports: [AdsSyncService, AdsService],
 })
 export class AdsModule {}
