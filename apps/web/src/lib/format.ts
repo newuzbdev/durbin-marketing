@@ -1,5 +1,6 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { uz } from 'date-fns/locale';
+import { fromMinor } from '@durbin/shared';
 
 const numberFmt = new Intl.NumberFormat('ru-RU'); // 12 345 — bo'sh joy bilan guruhlash
 const compactFmt = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
@@ -21,3 +22,10 @@ export const fmtDate = (iso: string) => format(new Date(iso), 'd MMMM yyyy', { l
 export const fmtDateTime = (iso: string) => format(new Date(iso), 'd MMM, HH:mm', { locale: uz });
 export const fmtTime = (iso: string) => format(new Date(iso), 'HH:mm', { locale: uz });
 export const fmtAgo = (iso: string) => formatDistanceToNow(new Date(iso), { addSuffix: true, locale: uz });
+
+/** Reklama summalari eng kichik birlikda keladi (tiyin, cent). UZS — "150 000 so'm", boshqalar — Intl valyuta. */
+export function fmtMoney(minor: number, currency: string): string {
+  const major = fromMinor(minor, currency);
+  if (currency === 'UZS') return `${numberFmt.format(Math.round(major))} so'm`;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(major);
+}

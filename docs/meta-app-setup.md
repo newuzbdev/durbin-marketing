@@ -44,7 +44,7 @@ Kod so'raydigan ruxsatlar (`apps/api/src/meta/graph-meta-client.ts` dagi `META_S
 
 ```
 instagram_basic, instagram_manage_insights, instagram_manage_messages, instagram_content_publish,
-pages_show_list, pages_read_engagement, pages_manage_metadata, business_management,
+pages_show_list, pages_read_engagement, pages_manage_metadata, pages_manage_ads, business_management,
 ads_read, ads_management, leads_retrieval
 ```
 

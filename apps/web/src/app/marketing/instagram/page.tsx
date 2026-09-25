@@ -12,7 +12,8 @@ import { AccountBar, ConnectCard, MockNotice, SelectAccountDialog } from '@/comp
 import { StatsTab } from '@/components/instagram/stats-tab';
 import { PostsTab } from '@/components/instagram/posts-tab';
 import { DmTab } from '@/components/instagram/dm-tab';
-import { useInstagramConnection, useSyncInstagram } from '@/lib/queries/instagram';
+import { SyncBanner } from '@/components/sync-banner';
+import { useInstagramConnection, useSyncInstagram, useSyncState } from '@/lib/queries/instagram';
 import { uz } from '@/messages/uz';
 
 const t = uz.instagram;
@@ -35,6 +36,7 @@ function InstagramView() {
   const params = useSearchParams();
   const connection = useInstagramConnection();
   const sync = useSyncInstagram();
+  const syncState = useSyncState('INSTAGRAM');
 
   const tab: Tab = TABS.includes(params.get('tab') as Tab) ? (params.get('tab') as Tab) : 'stats';
   const period: Period = PERIOD_OPTIONS.includes(params.get('period') as Period)
@@ -80,11 +82,24 @@ function InstagramView() {
         actions={conn && <AccountBar connection={conn} />}
       />
       <MockNotice />
+      {conn && syncState.syncing && (
+        <SyncBanner text={syncState.firstSync ? uz.common.firstSync : uz.common.syncing} />
+      )}
 
       {connection.isLoading ? (
         <Skeleton className="h-64" />
       ) : !conn ? (
         <ConnectCard />
+      ) : syncState.firstSync ? (
+        // Hali hech narsa sync qilinmagan — nollar o'rniga skelet
+        <div className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
+          <Skeleton className="h-80" />
+        </div>
       ) : (
         <Tabs value={tab} onValueChange={(v) => setParams({ tab: v === 'stats' ? null : String(v) })}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

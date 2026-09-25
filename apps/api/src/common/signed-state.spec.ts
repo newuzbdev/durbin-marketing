@@ -10,8 +10,9 @@ describe('OAuth state', () => {
     process.env.ENCRYPTION_KEY = randomBytes(32).toString('base64');
   });
 
-  it("imzolangan state qaytib o'qiladi", () => {
-    expect(verifyState(signState(state))).toEqual(state);
+  it("imzolangan state qaytib o'qiladi; target ko'rsatilmasa — INSTAGRAM", () => {
+    expect(verifyState(signState(state))).toEqual({ ...state, target: 'INSTAGRAM' });
+    expect(verifyState(signState({ ...state, target: 'ADS' }))?.target).toBe('ADS');
   });
 
   it("o'zgartirilgan payload rad etiladi", () => {

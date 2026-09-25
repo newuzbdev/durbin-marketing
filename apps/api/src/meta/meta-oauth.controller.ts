@@ -1,6 +1,11 @@
 import { Body, Controller, Delete, Get, Headers, HttpCode, Param, ParseEnumPipe, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { selectInstagramAccountSchema, type SelectInstagramAccountInput } from '@durbin/shared';
+import {
+  selectAdAccountSchema,
+  selectInstagramAccountSchema,
+  type SelectAdAccountInput,
+  type SelectInstagramAccountInput,
+} from '@durbin/shared';
 import { CurrentSchool, CurrentUser, Public, Roles, type AuthUser, type SchoolContext } from '../auth/decorators.js';
 import { SchoolGuard } from '../schools/school.guard.js';
 import { ZodPipe } from '../common/zod.pipe.js';
@@ -16,8 +21,13 @@ export class MetaOAuthController {
   @Get('oauth/start')
   @UseGuards(SchoolGuard)
   @Roles('OWNER', 'MANAGER')
-  start(@CurrentSchool() school: SchoolContext, @CurrentUser() user: AuthUser, @Headers('origin') origin?: string) {
-    return this.connections.startOAuth(school.id, user.id, origin);
+  start(
+    @CurrentSchool() school: SchoolContext,
+    @CurrentUser() user: AuthUser,
+    @Headers('origin') origin?: string,
+    @Query('target') target?: string,
+  ) {
+    return this.connections.startOAuth(school.id, user.id, origin, target === 'ADS' ? 'ADS' : 'INSTAGRAM');
   }
 
   /** Facebook shu yerga qaytaradi. Brauzer navigatsiyasi — JWT yo'q, maktab `state` ichida imzolangan. */
@@ -58,6 +68,24 @@ export class MetaOAuthController {
     @Body(new ZodPipe(selectInstagramAccountSchema)) body: SelectInstagramAccountInput,
   ) {
     await this.connections.selectInstagram(school.id, body.selectionId, body.igUserId);
+  }
+
+  @Get('connections/ads/pending/:selectionId')
+  @UseGuards(SchoolGuard)
+  @Roles('OWNER', 'MANAGER')
+  pendingAds(@CurrentSchool() school: SchoolContext, @Param('selectionId') selectionId: string) {
+    return this.connections.pendingAdAccounts(school.id, selectionId);
+  }
+
+  @Post('connections/ads')
+  @UseGuards(SchoolGuard)
+  @Roles('OWNER', 'MANAGER')
+  @HttpCode(204)
+  async selectAds(
+    @CurrentSchool() school: SchoolContext,
+    @Body(new ZodPipe(selectAdAccountSchema)) body: SelectAdAccountInput,
+  ) {
+    await this.connections.selectAdAccount(school.id, body.selectionId, body.adAccountId);
   }
 
   @Delete('connections/:type')

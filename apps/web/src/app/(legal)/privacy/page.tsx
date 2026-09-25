@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       <h2>Qanday ma’lumotlarni olamiz</h2>
       <ul>
         <li>Hisob ma’lumotlari: ism, email, parol (shifrlangan xesh ko‘rinishida).</li>
-        <li>Meta orqali: Instagram akkaunt statistikasi (reach, ko‘rishlar, followerlar), postlar va ularning statistikasi, Direct xabarlar, Facebook sahifa va reklama kampaniyalari ma’lumotlari, Lead Ads formalari orqali kelgan lidlar.</li>
+        <li>Meta orqali: Instagram akkaunt statistikasi (reach, ko‘rishlar, followerlar), postlar va ularning statistikasi, Direct xabarlar, Facebook sahifa va reklama campaignlari ma’lumotlari, Lead Ads formalari orqali kelgan lidlar.</li>
         <li>Maktab kiritgan ma’lumotlar: kontent reja, media fayllar, maqsadlar, lidlar (ism va telefon — ixtiyoriy).</li>
         <li>Maktabning Telegram boti orqali: botga yozgan foydalanuvchining ismi, Telegram username’i va o‘zi yuborgan telefon raqami.</li>
       </ul>

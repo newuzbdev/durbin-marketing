@@ -97,6 +97,8 @@ model MetaConnection {
   // INSTAGRAM: IG akkaunt bog'langan Facebook Page (DM shu orqali yuboriladi)
   pageId         String?
   avatarUrl      String?
+  // ADS: reklama akkaunti valyutasi (masalan UZS, USD) — summalar shu valyutaning eng kichik birligida
+  currency       String?
   // AES-256-GCM bilan shifrlangan
   accessTokenEnc String
   expiresAt      DateTime?
@@ -111,8 +113,10 @@ model MetaConnection {
 
 // OAuth callback'da bir nechta akkaunt topilsa, foydalanuvchi tanlaguncha user token shu yerda turadi
 model MetaPendingSelection {
-  id           String   @id @default(cuid())
+  id           String             @id @default(cuid())
   schoolId     String
+  // Qaysi ulanish uchun tanlov: IG akkaunt yoki reklama akkaunti
+  type         MetaConnectionType @default(INSTAGRAM)
   userTokenEnc String
   expiresAt    DateTime
   createdAt    DateTime @default(now())

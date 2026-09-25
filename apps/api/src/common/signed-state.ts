@@ -9,6 +9,8 @@ export interface OAuthState {
   userId: string;
   /** Callback'dan keyin qaytiladigan web origin (WEB_ORIGIN ro'yxatidan) */
   returnOrigin: string;
+  /** Nima ulanmoqda — IG akkaunt yoki reklama akkaunti */
+  target?: 'INSTAGRAM' | 'ADS';
 }
 
 interface Payload extends OAuthState {
@@ -38,7 +40,12 @@ export function verifyState(token: string, now = Date.now()): OAuthState | null 
   try {
     const p = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as Payload;
     if (typeof p.exp !== 'number' || p.exp < now) return null;
-    return { schoolId: p.schoolId, userId: p.userId, returnOrigin: p.returnOrigin };
+    return {
+      schoolId: p.schoolId,
+      userId: p.userId,
+      returnOrigin: p.returnOrigin,
+      target: p.target === 'ADS' ? 'ADS' : 'INSTAGRAM',
+    };
   } catch {
     return null;
   }

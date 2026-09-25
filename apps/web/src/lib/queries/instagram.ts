@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   IgConversationDto,
   IgMediaDto,
@@ -31,7 +32,30 @@ export function useConnections() {
   return useQuery({
     queryKey: ['meta', s, 'connections'],
     queryFn: () => api<MetaConnectionDto[]>('/meta/connections'),
+    // Yangi ulanishning birinchi sync'i fon cron'da ketadi — tugashini kutib turamiz
+    refetchInterval: (q) => (q.state.data?.some((c) => !c.lastSyncedAt) ? 3000 : false),
   });
+}
+
+/**
+ * Meta'dan ma'lumot olinmoqdami: "Yangilash" bosilgan yoki ulangandan keyingi birinchi sync hali tugamagan.
+ * Birinchi sync fon'da tugaganda sahifa ma'lumotlari qayta so'raladi.
+ */
+export function useSyncState(type: 'INSTAGRAM' | 'ADS') {
+  const s = useSchoolKey();
+  const qc = useQueryClient();
+  const root = type === 'ADS' ? 'ads' : 'instagram';
+  const conn = useConnections().data?.find((c) => c.type === type) ?? null;
+  const running = useIsMutating({ mutationKey: [root, s, 'sync'] }) > 0;
+  const firstSync = !!conn && !conn.lastSyncedAt;
+
+  const wasFirst = useRef(firstSync);
+  useEffect(() => {
+    if (wasFirst.current && !firstSync) qc.invalidateQueries({ queryKey: [root, s] });
+    wasFirst.current = firstSync;
+  }, [firstSync, qc, root, s]);
+
+  return { syncing: running || firstSync, firstSync };
 }
 
 export function useInstagramConnection() {
@@ -112,6 +136,7 @@ export function useSyncInstagram() {
   const s = useSchoolKey();
   const qc = useQueryClient();
   return useMutation({
+    mutationKey: ['instagram', s, 'sync'],
     mutationFn: () => api('/instagram/sync', { method: 'POST' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['instagram', s] });

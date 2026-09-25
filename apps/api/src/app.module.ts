@@ -9,6 +9,7 @@ import { WebhooksModule } from './webhooks/webhooks.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { ContentModule } from './content/content.module.js';
 import { GoalsModule } from './goals/goals.module.js';
+import { AdsModule } from './ads/ads.module.js';
 import { HealthController } from './health.controller.js';
 
 @Module({
@@ -23,6 +24,7 @@ import { HealthController } from './health.controller.js';
     StorageModule,
     ContentModule,
     GoalsModule,
+    AdsModule,
   ],
   controllers: [HealthController],
 })

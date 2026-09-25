@@ -1,4 +1,4 @@
-import type { IgMediaType, PostType } from '@durbin/shared';
+import type { CampaignObjective, CampaignStatus, IgMediaType, PostType } from '@durbin/shared';
 
 // Meta Graph API ustidagi abstraksiya. Ikkita implementatsiya:
 //  - GraphMetaClient  (META_MODE=live) — haqiqiy Graph API
@@ -67,6 +67,66 @@ export interface IgMessageItem {
   sentAt: Date;
 }
 
+// ─── Facebook Ads ─────────────────────────────────────────────────
+
+export interface AdAccount {
+  /** act_XXXX */
+  id: string;
+  name: string;
+  currency: string;
+}
+
+/** Reklama akkaunti API chaqiruvlari uchun (long-lived user token) */
+export interface AdsRef {
+  adAccountId: string;
+  accessToken: string;
+  currency: string;
+}
+
+export interface AdCampaignItem {
+  externalId: string;
+  name: string;
+  status: CampaignStatus;
+  objective: string;
+  /** Kampaniya byudjeti yoki ad set'lar yig'indisi, eng kichik birlikda */
+  dailyBudget: number | null;
+  startTime: Date | null;
+  stopTime: Date | null;
+}
+
+export interface AdInsightRow {
+  campaignExternalId: string;
+  /** YYYY-MM-DD */
+  date: string;
+  /** Eng kichik valyuta birligida */
+  spend: number;
+  clicks: number;
+  reach: number;
+  impressions: number;
+  leads: number;
+}
+
+export interface CreateCampaignParams {
+  name: string;
+  objective: CampaignObjective;
+  dailyBudget: number;
+  startTime: Date;
+  endTime: Date;
+  ageMin: number;
+  ageMax: number;
+  genders: ('male' | 'female')[];
+  cityKeys: string[];
+  /** OUTCOME_LEADS uchun — lid formasi shu sahifaniki bo'ladi */
+  pageId: string | null;
+}
+
+export interface LeadAdItem {
+  externalId: string;
+  createdAt: Date;
+  name: string | null;
+  phone: string | null;
+}
+
 export interface PublishMediaInput {
   postType: PostType;
   /** Meta serverlari yuklab oladigan ochiq URL */
@@ -106,6 +166,20 @@ export interface MetaClient {
 
   /** Container yaratish → (video bo'lsa) tayyor bo'lishini kutish → chiqarish */
   publishMedia(account: IgAccountRef, input: PublishMediaInput): Promise<PublishedMedia>;
+
+  // Facebook Ads
+  listAdAccounts(userToken: string): Promise<AdAccount[]>;
+  listCampaigns(ref: AdsRef): Promise<AdCampaignItem[]>;
+  /** Kampaniyalar bo'yicha kunlik statistika, [from, to] */
+  getCampaignDailyInsights(ref: AdsRef, from: Date, to: Date): Promise<AdInsightRow[]>;
+  /** Davr bo'yicha takrorlanmas reach: akkaunt jami va kampaniyalar bo'yicha (kunlik yig'indi emas) */
+  getReach(ref: AdsRef, from: Date, to: Date): Promise<{ total: number; byCampaign: Record<string, number> }>;
+  setCampaignStatus(ref: AdsRef, campaignId: string, status: 'ACTIVE' | 'PAUSED'): Promise<void>;
+  /** Kampaniya + ad set (reklamasiz), ikkalasi ham PAUSED */
+  createCampaign(ref: AdsRef, params: CreateCampaignParams): Promise<{ campaignId: string }>;
+  searchCities(ref: AdsRef, query: string): Promise<{ key: string; name: string; region: string | null }[]>;
+  /** Sahifaning Lead Ads formalaridan `since`dan keyingi lidlar (sahifa tokeni bilan) */
+  listLeadAds(page: IgAccountRef, since: Date): Promise<LeadAdItem[]>;
 }
 
 export class MetaApiError extends Error {

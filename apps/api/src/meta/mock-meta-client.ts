@@ -1,9 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import type { IgMediaType } from '@durbin/shared';
+import type { CampaignStatus, IgMediaType } from '@durbin/shared';
 import { addDays, eachDay, startOfUtcDay, toIsoDate } from '../common/dates.js';
 import {
   MetaApiError,
+  type AdAccount,
+  type AdCampaignItem,
+  type AdInsightRow,
+  type AdsRef,
+  type CreateCampaignParams,
   type IgAccountRef,
+  type LeadAdItem,
   type IgConversationItem,
   type IgDailyMetrics,
   type IgMediaItem,
@@ -47,6 +53,21 @@ const INBOUND = [
   "Ingliz tili kurslari haftada necha marta?",
   'Rahmat, tushunarli!',
 ];
+
+const MOCK_AD_ACCOUNT: AdAccount = { id: 'act_mock1', name: 'Demo maktab — reklama', currency: 'UZS' };
+
+// Byudjet — tiyinda (UZS offset 100): 150 000 so'm/kun = 15 000 000
+const MOCK_CAMPAIGNS: Omit<AdCampaignItem, 'startTime' | 'stopTime'>[] = [
+  { externalId: 'mock-campaign-1', name: 'Qabul 2026 — lid formasi', status: 'ACTIVE', objective: 'OUTCOME_LEADS', dailyBudget: 15_000_000 },
+  { externalId: 'mock-campaign-2', name: 'Ochiq eshiklar kuni', status: 'ACTIVE', objective: 'OUTCOME_TRAFFIC', dailyBudget: 8_000_000 },
+  { externalId: 'mock-campaign-3', name: 'Brend — xabardorlik', status: 'PAUSED', objective: 'OUTCOME_AWARENESS', dailyBudget: 5_000_000 },
+];
+
+const MOCK_CITIES = ['Toshkent', 'Samarqand', 'Buxoro', 'Andijon', 'Namangan', "Farg'ona", 'Nukus', 'Qarshi', 'Termiz', 'Jizzax', 'Navoiy', 'Urganch', 'Guliston'].map(
+  (name, i) => ({ key: `mock-city-${i + 1}`, name, region: null }),
+);
+
+const LEAD_NAMES = ['Dilnoza Rahimova', 'Sardor Aliyev', 'Malika Yusupova', 'Jasur Karimov', 'Nodira Tosheva'];
 
 export class MockMetaClient implements MetaClient {
   readonly mode = 'mock' as const;
@@ -151,6 +172,101 @@ export class MockMetaClient implements MetaClient {
 
   async sendMessage(): Promise<{ externalId: string }> {
     return { externalId: `mock-mid-${randomUUID()}` };
+  }
+
+  // ─── Facebook Ads ───────────────────────────────────────────────
+  // Durbin'da yaratilgan kampaniyalar va holat o'zgarishlari jarayon xotirasida saqlanadi
+
+  private readonly createdCampaigns = new Map<string, AdCampaignItem[]>();
+  private readonly statusOverrides = new Map<string, CampaignStatus>();
+
+  async listAdAccounts(): Promise<AdAccount[]> {
+    return [MOCK_AD_ACCOUNT];
+  }
+
+  async listCampaigns(ref: AdsRef): Promise<AdCampaignItem[]> {
+    const base = MOCK_CAMPAIGNS.map((c) => ({ ...c, startTime: addDays(startOfUtcDay(new Date()), -60), stopTime: null }));
+    return [...base, ...(this.createdCampaigns.get(ref.adAccountId) ?? [])].map((c) => ({
+      ...c,
+      status: this.statusOverrides.get(c.externalId) ?? c.status,
+    }));
+  }
+
+  async getCampaignDailyInsights(ref: AdsRef, from: Date, to: Date): Promise<AdInsightRow[]> {
+    const campaigns = await this.listCampaigns(ref);
+    return campaigns
+      .filter((c) => MOCK_CAMPAIGNS.some((m) => m.externalId === c.externalId))
+      .flatMap((c) =>
+        eachDay(from, to).map((day) => {
+          const r = rng(`${c.externalId}:${toIsoDate(day)}`);
+          // To'xtatilgan kampaniya oxirgi 5 kunda sarflamaydi
+          const idle = c.status !== 'ACTIVE' && day > addDays(startOfUtcDay(new Date()), -5);
+          const impressions = idle ? 0 : Math.round(2500 + r() * 3500);
+          const clicks = Math.round(impressions * (0.008 + r() * 0.014));
+          return {
+            campaignExternalId: c.externalId,
+            date: toIsoDate(day),
+            spend: idle ? 0 : Math.round((c.dailyBudget ?? 0) * (0.7 + r() * 0.3)),
+            clicks,
+            reach: Math.round(impressions * 0.62),
+            impressions,
+            leads: c.objective === 'OUTCOME_LEADS' ? Math.round(clicks * (0.05 + r() * 0.1)) : 0,
+          };
+        }),
+      );
+  }
+
+  async getReach(ref: AdsRef, from: Date, to: Date) {
+    const rows = await this.getCampaignDailyInsights(ref, from, to);
+    const byCampaign: Record<string, number> = {};
+    // Takrorlanmas reach kunlik yig'indidan kam — mock'da 55%
+    for (const r of rows) byCampaign[r.campaignExternalId] = (byCampaign[r.campaignExternalId] ?? 0) + r.reach;
+    for (const k of Object.keys(byCampaign)) byCampaign[k] = Math.round(byCampaign[k] * 0.55);
+    const total = Math.round(Object.values(byCampaign).reduce((a, b) => a + b, 0) * 0.85);
+    return { total, byCampaign };
+  }
+
+  async setCampaignStatus(_ref: AdsRef, campaignId: string, status: 'ACTIVE' | 'PAUSED') {
+    this.statusOverrides.set(campaignId, status);
+  }
+
+  async createCampaign(ref: AdsRef, p: CreateCampaignParams): Promise<{ campaignId: string }> {
+    const campaignId = `mock-campaign-${randomUUID().slice(0, 8)}`;
+    const list = this.createdCampaigns.get(ref.adAccountId) ?? [];
+    list.push({
+      externalId: campaignId,
+      name: p.name,
+      status: 'PAUSED',
+      objective: p.objective,
+      dailyBudget: p.dailyBudget,
+      startTime: p.startTime,
+      stopTime: p.endTime,
+    });
+    this.createdCampaigns.set(ref.adAccountId, list);
+    return { campaignId };
+  }
+
+  async searchCities(_ref: AdsRef, query: string) {
+    const q = query.toLowerCase();
+    return MOCK_CITIES.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 10);
+  }
+
+  async listLeadAds(page: IgAccountRef, since: Date): Promise<LeadAdItem[]> {
+    // Kuniga 0–3 ta lid, oxirgi 30 kun ichida; bir xil kun — bir xil lidlar
+    const today = startOfUtcDay(new Date());
+    return eachDay(addDays(today, -29), today).flatMap((day) => {
+      const r = rng(`${page.pageId}:leadads:${toIsoDate(day)}`);
+      const n = Math.floor(r() * 4);
+      return Array.from({ length: n }, (_, i) => {
+        const createdAt = new Date(day.getTime() + (9 + i * 3) * 3_600_000);
+        return {
+          externalId: `mock-leadad-${toIsoDate(day)}-${i}`,
+          createdAt,
+          name: LEAD_NAMES[(day.getUTCDate() + i) % LEAD_NAMES.length],
+          phone: `+99890${String(Math.floor(r() * 10_000_000)).padStart(7, '0')}`,
+        };
+      });
+    }).filter((l) => l.createdAt > since && l.createdAt <= new Date());
   }
 
   async publishMedia(_account: IgAccountRef, input: PublishMediaInput): Promise<PublishedMedia> {

@@ -73,9 +73,12 @@ export class InstagramSyncService {
       const today = startOfUtcDay(new Date());
       const from = addDays(today, -((conn.lastSyncedAt ? INCREMENTAL_DAYS : INITIAL_DAYS) - 1));
 
-      const days = await this.syncDailyInsights(schoolId, ref, from, today);
-      const media = await this.syncMedia(schoolId, ref);
-      const { conversations, newMessages } = await this.syncConversations(schoolId, ref);
+      // Uch qism bir-biriga bog'liq emas — parallel (har bir Meta so'rovi 0.5–2 s, ketma-ket ~8 s bo'lardi)
+      const [days, media, { conversations, newMessages }] = await Promise.all([
+        this.syncDailyInsights(schoolId, ref, from, today),
+        this.syncMedia(schoolId, ref),
+        this.syncConversations(schoolId, ref),
+      ]);
 
       await this.prisma.metaConnection.update({ where: { id: conn.id }, data: { lastSyncedAt: new Date() } });
       return { days, media, conversations, newMessages };

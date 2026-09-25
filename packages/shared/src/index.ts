@@ -257,9 +257,16 @@ export type WebhookLeadInput = z.infer<typeof webhookLeadSchema>;
 
 // ─── Facebook Ads ───────────────────────────────────────────────
 
+/** Meta: ko'pchilik valyutalar 1/100 birlikda, bular esa kasr qismisiz (Graph API currency offset = 1) */
+const ZERO_DECIMAL_CURRENCIES = ['CLP', 'COP', 'CRC', 'HUF', 'ISK', 'IDR', 'JPY', 'KRW', 'PYG', 'TWD', 'VND'];
+export const currencyOffset = (currency: string) => (ZERO_DECIMAL_CURRENCIES.includes(currency) ? 1 : 100);
+/** Eng kichik birlik → asosiy birlik (masalan, tiyin → so'm) */
+export const fromMinor = (minor: number, currency: string) => minor / currencyOffset(currency);
+export const toMinor = (major: number, currency: string) => Math.round(major * currencyOffset(currency));
+
 export const createCampaignSchema = z
   .object({
-    name: z.string().min(1).max(200),
+    name: z.string().trim().min(1).max(200),
     objective: z.enum(CAMPAIGN_OBJECTIVES),
     dailyBudget: z.number().int().positive(), // eng kichik valyuta birligida
     startDate: isoDate,
@@ -268,11 +275,63 @@ export const createCampaignSchema = z
       ageMin: z.number().int().min(13).max(65).default(18),
       ageMax: z.number().int().min(13).max(65).default(45),
       genders: z.array(z.enum(['male', 'female'])).default([]),
-      cities: z.array(z.string()).default([]),
+      /** Meta geolokatsiya kalitlari (GET /ads/cities); bo'sh — butun O'zbekiston */
+      cities: z.array(z.string().max(40)).max(25).default([]),
     }),
   })
-  .refine((c) => c.endDate >= c.startDate, { message: 'Muddat noto‘g‘ri', path: ['endDate'] });
+  .refine((c) => c.endDate >= c.startDate, { message: 'Muddat noto‘g‘ri', path: ['endDate'] })
+  .refine((c) => c.audience.ageMin <= c.audience.ageMax, { message: 'Yosh oralig‘i noto‘g‘ri', path: ['audience', 'ageMax'] });
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
+
+export const campaignStatusSchema = z.object({ status: z.enum(['ACTIVE', 'PAUSED']) });
+export type CampaignStatusInput = z.infer<typeof campaignStatusSchema>;
+
+export const selectAdAccountSchema = z.object({ selectionId: z.string().min(1), adAccountId: z.string().min(1) });
+export type SelectAdAccountInput = z.infer<typeof selectAdAccountSchema>;
+
+export const citySearchQuerySchema = z.object({ q: z.string().trim().min(2).max(60) });
+
+export interface AdAccountOptionDto {
+  id: string;
+  name: string;
+  currency: string;
+}
+
+export interface GeoCityDto {
+  key: string;
+  name: string;
+  region: string | null;
+}
+
+export interface AdTotals {
+  spend: number;
+  clicks: number;
+  impressions: number;
+  /** Takrorlanmas odamlar — Meta'dan davr bo'yicha olinadi; olib bo'lmasa null */
+  reach: number | null;
+  leads: number;
+  /** clicks / impressions, foizda */
+  ctr: number;
+}
+
+export interface AdCampaignDto extends AdTotals {
+  id: string;
+  name: string;
+  status: CampaignStatus;
+  objective: string;
+  dailyBudget: number | null;
+  startTime: string | null;
+  stopTime: string | null;
+}
+
+export interface AdsOverviewDto {
+  range: { from: string; to: string };
+  currency: string;
+  totals: AdTotals;
+  previousTotals: AdTotals;
+  campaigns: AdCampaignDto[];
+  series: { date: string; spend: number; clicks: number }[];
+}
 
 // ─── Instagram DM ───────────────────────────────────────────────
 
@@ -306,6 +365,8 @@ export interface MetaConnectionDto {
   avatarUrl: string | null;
   lastSyncedAt: string | null;
   expiresAt: string | null;
+  /** Faqat ADS */
+  currency: string | null;
 }
 
 export interface IgOverviewDto {
