@@ -27,6 +27,11 @@ export interface IgAccountRef {
   igUserId: string;
   pageId: string;
   accessToken: string;
+  /**
+   * Instagram Login API tokeni (graph.instagram.com). Bo'lsa, Direct xabarlar shu orqali olinadi va yuboriladi —
+   * Facebook Login yo'li Advanced Access'siz xabarlarni bermaydi, Instagram Login (Live app) esa beradi.
+   */
+  igLoginToken?: string;
 }
 
 export interface IgDailyMetrics {
@@ -197,3 +202,6 @@ export class MetaApiError extends Error {
     return this.code === 190;
   }
 }
+
+/** Matnsiz Direct xabar (rasm, video, ulashilgan post, reaksiya) */
+export const MEDIA_PLACEHOLDER = '📎 Media';

@@ -4,6 +4,7 @@ import { toMinor, type CampaignObjective, type CampaignStatus, type IgMediaType 
 import { addDays, eachDay, toIsoDate } from '../common/dates.js';
 import { mapLimit } from '../common/async.js';
 import {
+  MEDIA_PLACEHOLDER,
   MetaApiError,
   type AdAccount,
   type AdCampaignItem,
@@ -243,14 +244,16 @@ export class GraphMetaClient implements MetaClient {
   }
 
   async listConversations(account: IgAccountRef, limit: number): Promise<IgConversationItem[]> {
-    const res = await this.get<
-      GraphPage<{ id: string; updated_time: string; participants?: { data: { id: string; username?: string }[] } }>
-    >(`/${account.pageId}/conversations`, {
-      access_token: account.accessToken,
-      platform: 'instagram',
-      fields: 'id,updated_time,participants',
-      limit,
-    });
+    type Conversations = GraphPage<{
+      id: string;
+      updated_time: string;
+      participants?: { data: { id: string; username?: string }[] };
+    }>;
+    const params = { platform: 'instagram', fields: 'id,updated_time,participants', limit };
+    // Instagram Login tokeni bo'lsa — graph.instagram.com (Facebook Login yo'li Advanced Access'siz bo'sh qaytaradi)
+    const res = account.igLoginToken
+      ? await this.igRequest<Conversations>('GET', '/me/conversations', account.igLoginToken, params)
+      : await this.get<Conversations>(`/${account.pageId}/conversations`, { access_token: account.accessToken, ...params });
     return res.data.flatMap((c) => {
       const other = c.participants?.data.find((p) => p.id !== account.igUserId);
       if (!other) return [];
@@ -266,26 +269,45 @@ export class GraphMetaClient implements MetaClient {
   }
 
   async listMessages(account: IgAccountRef, conversationId: string, limit: number): Promise<IgMessageItem[]> {
-    const res = await this.get<
-      GraphPage<{ id: string; message?: string; from?: { id: string }; created_time: string }>
-    >(`/${conversationId}/messages`, {
-      access_token: account.accessToken,
-      fields: 'id,message,from,created_time',
-      limit,
-    });
+    type Messages = GraphPage<{ id: string; message?: string; from?: { id: string }; created_time: string }>;
+    const params = { fields: 'id,message,from,created_time', limit };
+    const res = account.igLoginToken
+      ? await this.igRequest<Messages>('GET', `/${conversationId}/messages`, account.igLoginToken, params)
+      : await this.get<Messages>(`/${conversationId}/messages`, { access_token: account.accessToken, ...params });
     return res.data.map((m) => ({
       externalId: m.id,
       inbound: m.from?.id !== account.igUserId,
-      text: m.message ?? '',
+      // Rasm, video, ulashilgan post yoki reaksiya — matnsiz
+      text: m.message || MEDIA_PLACEHOLDER,
       sentAt: new Date(m.created_time),
     }));
   }
 
   async sendMessage(account: IgAccountRef, recipientId: string, text: string): Promise<{ externalId: string }> {
-    const res = await this.request<{ message_id: string }>('POST', `/${account.pageId}/messages`, {
-      access_token: account.accessToken,
-    }, { recipient: { id: recipientId }, message: { text } });
+    const body = { recipient: { id: recipientId }, message: { text } };
+    const res = account.igLoginToken
+      ? await this.igRequest<{ message_id: string }>('POST', '/me/messages', account.igLoginToken, {}, body)
+      : await this.request<{ message_id: string }>('POST', `/${account.pageId}/messages`, { access_token: account.accessToken }, body);
     return { externalId: res.message_id };
+  }
+
+  /** Instagram Login API (graph.instagram.com) — Bearer token, appsecret_proof talab qilinmaydi */
+  private async igRequest<T>(method: 'GET' | 'POST', path: string, token: string, params: Params, body?: unknown): Promise<T> {
+    const url = new URL(`https://graph.instagram.com/${this.version}${path}`);
+    for (const [k, v] of Object.entries(params)) if (v !== undefined) url.searchParams.set(k, String(v));
+    const init: RequestInit = { method, headers: { Authorization: `Bearer ${token}` } };
+    if (body !== undefined) {
+      init.headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+      init.body = JSON.stringify(body);
+    }
+    const res = await fetch(url, init);
+    const data = (await res.json().catch(() => ({}))) as { error?: { message: string; code?: number; error_subcode?: number } };
+    if (!res.ok || data.error) {
+      const e = data.error;
+      this.logger.warn(`IG ${method} ${path} → ${res.status}: ${e?.message ?? 'unknown'}`);
+      throw new MetaApiError(e?.message ?? `Instagram API ${res.status}`, res.status, e?.code, e?.error_subcode);
+    }
+    return data as T;
   }
 
   async publishMedia(account: IgAccountRef, input: PublishMediaInput): Promise<PublishedMedia> {

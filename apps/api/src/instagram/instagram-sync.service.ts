@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { mapLimit } from '../common/async.js';
 import { addDays, parseIsoDate, startOfUtcDay, toIsoDate } from '../common/dates.js';
 import { META_CLIENT, MetaApiError, type IgAccountRef, type MetaClient } from '../meta/meta-client.js';
 import { MetaConnectionsService } from '../meta/meta-connections.service.js';
@@ -152,8 +153,12 @@ export class InstagramSyncService {
     const conversations = await this.meta.listConversations(ref, CONVERSATION_LIMIT);
     let newMessages = 0;
 
-    for (const c of conversations) {
-      const messages = await this.meta.listMessages(ref, c.externalId, MESSAGE_LIMIT);
+    // Meta so'rovlari parallel (har biri 0.5–2 s), bazaga yozish esa ketma-ket
+    const withMessages = await mapLimit(conversations, 5, async (c) => ({
+      c,
+      messages: await this.meta.listMessages(ref, c.externalId, MESSAGE_LIMIT),
+    }));
+    for (const { c, messages } of withMessages) {
       const conv = await this.prisma.igConversation.upsert({
         where: { schoolId_participantId: { schoolId, participantId: c.participantId } },
         create: {

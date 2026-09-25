@@ -13,7 +13,7 @@ Instagram (OAuth, sync, stats, posts, DM, webhook), Kontent Plan (calendar, R2 u
 Maqsadlar (goals with computed progress; leads entered manually, from Instagram DMs, or via a school Telegram bot),
 Facebook Ads (ad account OAuth, campaign/insight sync, pause/start, campaign + ad set creation, Lead Ads), and
 AI Yordamchi (analysis, content suggestions, scripts, chat — Claude Sonnet 5 via Replicate), and Dashboard
-(KPIs, charts, goals, this week's content; DB-only, no Meta calls). Live Instagram DMs need App Review (Advanced Access); see memory.
+(KPIs, charts, goals, this week's content; DB-only, no Meta calls). Instagram DMs come through a separate Instagram Login app (IG_LOGIN_TOKEN), see docs/meta-app-setup.md §6.
 Remaining: deploy + Meta App Review
 (`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`). Meta App setup: `docs/meta-app-setup.md`;
 media storage (R2): `docs/content-plan-setup.md`.

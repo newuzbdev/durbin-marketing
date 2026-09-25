@@ -203,7 +203,27 @@ export class MetaConnectionsService {
       igUserId: conn.externalId,
       pageId: conn.pageId,
       accessToken: decrypt(conn.accessTokenEnc),
+      igLoginToken: await this.igLoginTokenFor(conn.externalId),
     };
+  }
+
+  /**
+   * Sinov yo'li: `.env` dagi IG_LOGIN_TOKEN (Meta dashboard'da yaratilgan) — faqat o'sha akkauntga tegishli bo'lsa.
+   * Production'da har bir maktab "Instagram Direct ulash" (Instagram Login OAuth) orqali o'z tokenini saqlaydi.
+   */
+  private igLoginOwner: Promise<string | null> | null = null;
+
+  private async igLoginTokenFor(igUserId: string): Promise<string | undefined> {
+    const token = process.env.IG_LOGIN_TOKEN;
+    if (!token || this.meta.mode !== 'live') return undefined;
+    this.igLoginOwner ??= fetch(`https://graph.instagram.com/me?fields=user_id&access_token=${encodeURIComponent(token)}`)
+      .then((r) => r.json() as Promise<{ user_id?: string }>)
+      .then((me) => me.user_id ?? null)
+      .catch(() => {
+        this.igLoginOwner = null; // tarmoq xatosi — keyingi safar qayta tekshiriladi
+        return null;
+      });
+    return (await this.igLoginOwner) === igUserId ? token : undefined;
   }
 
   private async saveInstagram(schoolId: string, account: InstagramAccount) {

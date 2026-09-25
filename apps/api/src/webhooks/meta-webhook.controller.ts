@@ -13,6 +13,7 @@ import {
 import type { Request } from 'express';
 import { Public } from '../auth/decorators.js';
 import { verifyMetaSignature } from '../common/signed-state.js';
+import { MEDIA_PLACEHOLDER } from '../meta/meta-client.js';
 import { DmService } from '../instagram/dm.service.js';
 
 interface InstagramWebhookBody {
@@ -55,7 +56,9 @@ export class MetaWebhookController {
   @Post()
   @HttpCode(200)
   async receive(@Req() req: RawBodyRequest<Request>, @Headers('x-hub-signature-256') signature?: string) {
-    if (!req.rawBody || !verifyMetaSignature(req.rawBody, signature, process.env.META_APP_SECRET ?? '')) {
+    // Facebook Login app (META_APP_SECRET) yoki Instagram Login app (IG_APP_SECRET) imzolagan bo'lishi mumkin
+    const secrets = [process.env.META_APP_SECRET, process.env.IG_APP_SECRET].filter((s): s is string => !!s);
+    if (!req.rawBody || !secrets.some((secret) => verifyMetaSignature(req.rawBody!, signature, secret))) {
       this.logger.warn(`Webhook rad etildi: imzo ${signature ? "mos kelmadi" : "yo'q"}`);
       throw new ForbiddenException('Imzo noto‘g‘ri');
     }
@@ -73,7 +76,7 @@ export class MetaWebhookController {
             senderId: ev.sender.id,
             recipientId: ev.recipient.id,
             mid: ev.message.mid,
-            text: ev.message.text ?? '[media]',
+            text: ev.message.text || MEDIA_PLACEHOLDER,
             timestamp: ev.timestamp,
             isEcho: !!ev.message.is_echo,
           })

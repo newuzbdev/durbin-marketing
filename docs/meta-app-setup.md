@@ -72,17 +72,27 @@ API'ni qayta ishga tushiring. Keyin Durbin → Instagram → **Instagram ulash**
 
 > Mock rejimdan live'ga o'tganda, mock orqali ulangan akkauntni **Uzish** qilib, qaytadan ulang.
 
-## 6. Webhook (Direct xabarlar real vaqtda)
+## 6. Instagram Direct xabarlari (Instagram Login app)
 
-Webhook bo'lmasa ham DM'lar har 6 soatda yoki **Yangilash** tugmasi bilan tortiladi.
-Real vaqtda kelishi uchun:
+Facebook Login yo'li (`/{page-id}/conversations`) Advanced Access'siz **bo'sh** qaytaradi — Live rejimda ham.
+Xabarlar alohida **Instagram Login** app orqali keladi:
 
-1. Lokal API'ni internetga chiqaring: `cloudflared tunnel --url http://localhost:4000`
-   (yoki ngrok). Sizga `https://xxxx.trycloudflare.com` beriladi.
-2. App Dashboard → **Webhooks** → obyekt: **Instagram** → Callback URL:
-   `https://xxxx.trycloudflare.com/api/meta/webhook`, Verify token: `META_WEBHOOK_VERIFY_TOKEN` qiymati.
-3. **messages** field'iga obuna bo'ling.
-4. Messenger → Instagram settings'da sahifani webhook'ga obuna qiling.
+1. developers.facebook.com → **Create app** → use case: **Manage messaging & content on Instagram** →
+   Business Portfolio'siz yaratish.
+2. **Use cases → Customize → API setup with Instagram login**.
+3. **App roles → Roles → Add People → Instagram Tester**: maktab akkaunti (va sinov uchun yozadigan akkaunt).
+   Taklifni brauzerda qabul qiling: instagram.com/accounts/manage_access → **Tester Invites** → Accept.
+4. **Generate access tokens → Add account** → maktab akkaunti bilan kiring → **Generate token** →
+   `apps/api/.env`: `IG_LOGIN_TOKEN="..."`. Shu sahifadagi **Instagram app secret** → `IG_APP_SECRET="..."`.
+5. **Configure webhooks**: Callback URL `https://<api-domen>/api/meta/webhook`, Verify token —
+   `META_WEBHOOK_VERIFY_TOKEN` qiymati → **messages** field'iga obuna; akkaunt yonidagi **Webhook Subscription** → On.
+   Lokal'da: `cloudflared tunnel --url http://localhost:4000` (manzil har ishga tushganda o'zgaradi).
+6. **App settings → Basic**: Privacy Policy URL `https://<web-domen>/privacy`, data deletion `/data-deletion`,
+   kategoriya, ikonka → **Publish** (Live rejim). **Development rejimida suhbatlar ham, webhook ham kelmaydi.**
+7. API'ni qayta ishga tushiring → Instagram → **Yangilash**. Suhbatlar, xabarlar va javob yuborish shu token orqali ishlaydi.
+
+> Hozircha `IG_LOGIN_TOKEN` bitta akkaunt uchun (sinov yo'li). Production'da har bir maktab
+> "Instagram Direct ulash" (Instagram Login OAuth) orqali o'z tokenini saqlashi kerak.
 
 ## 7. App Review (hamma maktablar uchun ochish)
 
