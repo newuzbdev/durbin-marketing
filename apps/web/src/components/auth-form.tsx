@@ -11,9 +11,10 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
 import { uz } from '@/messages/uz';
 
-// Faqat development: seed'dagi demo akkaunt login formasida oldindan to'ldiriladi (pnpm db:seed)
+// Demo akkaunt (pnpm db:seed) login formasida oldindan to'ldiriladi — sinov/namoyish uchun.
+// Ochiq saytda uni o'chirish: Vercel'da NEXT_PUBLIC_DEMO_LOGIN=off (kim kirsa, ulangan akkauntlarni boshqara oladi).
 const devLogin =
-  process.env.NODE_ENV === 'development' ? { email: 'demo@durbin.uz', password: 'demo12345' } : undefined;
+  process.env.NEXT_PUBLIC_DEMO_LOGIN === 'off' ? undefined : { email: 'demo@durbin.uz', password: 'demo12345' };
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const { login, register } = useAuth();
