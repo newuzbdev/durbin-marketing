@@ -327,7 +327,7 @@ export interface AdCampaignDto extends AdTotals {
   dailyBudget: number | null;
   startTime: string | null;
   stopTime: string | null;
-  /** Ads Manager'da shu campaignning reklamalari (rasm/video shu yerda qo'shiladi) */
+  /** Ads Manager'da shu campaign (uning ad set'lari; reklama shu yerdan qo'shiladi) */
   adsManagerUrl: string;
 }
 
