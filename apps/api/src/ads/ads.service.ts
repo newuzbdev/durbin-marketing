@@ -7,7 +7,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import type { AdCampaignDto, AdsOverviewDto, AdTotals, CreateCampaignInput, GeoCityDto, Period } from '@durbin/shared';
+import type { AdCampaignDto, AdsOverviewDto, AdTotals, CreateCampaignInput, GeoLocationDto, Period } from '@durbin/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { eachDay, periodRange, previousRange, startOfUtcDay, toIsoDate } from '../common/dates.js';
 import { META_CLIENT, MetaApiError, type AdsRef, type MetaClient } from '../meta/meta-client.js';
@@ -115,6 +115,7 @@ export class AdsService {
         ageMin: input.audience.ageMin,
         ageMax: input.audience.ageMax,
         genders: input.audience.genders,
+        countryCodes: input.audience.countries,
         cityKeys: input.audience.cities,
         pageId: page?.pageId ?? null,
       }),
@@ -135,9 +136,9 @@ export class AdsService {
     };
   }
 
-  async cities(schoolId: string, q: string): Promise<GeoCityDto[]> {
+  async locations(schoolId: string, q: string): Promise<GeoLocationDto[]> {
     const ref = await this.requireRef(schoolId);
-    return this.call(() => this.meta.searchCities(ref, q));
+    return this.call(() => this.meta.searchLocations(ref, q));
   }
 
   private async requireRef(schoolId: string): Promise<AdsRef> {

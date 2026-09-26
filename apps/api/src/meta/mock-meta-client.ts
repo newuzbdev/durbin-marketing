@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { CampaignStatus, IgMediaType } from '@durbin/shared';
+import type { CampaignStatus, GeoLocationDto, IgMediaType } from '@durbin/shared';
 import { addDays, eachDay, startOfUtcDay, toIsoDate } from '../common/dates.js';
 import {
   MetaApiError,
@@ -63,9 +63,19 @@ const MOCK_CAMPAIGNS: Omit<AdCampaignItem, 'startTime' | 'stopTime'>[] = [
   { externalId: 'mock-campaign-3', name: 'Brend — xabardorlik', status: 'PAUSED', objective: 'OUTCOME_AWARENESS', dailyBudget: 5_000_000 },
 ];
 
-const MOCK_CITIES = ['Toshkent', 'Samarqand', 'Buxoro', 'Andijon', 'Namangan', "Farg'ona", 'Nukus', 'Qarshi', 'Termiz', 'Jizzax', 'Navoiy', 'Urganch', 'Guliston'].map(
-  (name, i) => ({ key: `mock-city-${i + 1}`, name, region: null }),
-);
+const MOCK_LOCATIONS: GeoLocationDto[] = [
+  ...[
+    ['UZ', 'Uzbekistan'],
+    ['KZ', 'Kazakhstan'],
+    ['KG', 'Kyrgyzstan'],
+    ['TJ', 'Tajikistan'],
+    ['US', 'United States'],
+    ['AE', 'United Arab Emirates'],
+  ].map(([code, name]) => ({ type: 'country' as const, key: code, name, region: null, countryCode: code })),
+  ...['Toshkent', 'Samarqand', 'Buxoro', 'Andijon', 'Namangan', "Farg'ona", 'Nukus', 'Qarshi', 'Termiz', 'Jizzax', 'Navoiy', 'Urganch', 'Guliston'].map(
+    (name, i) => ({ type: 'city' as const, key: `mock-city-${i + 1}`, name, region: null, countryCode: 'UZ' }),
+  ),
+];
 
 const LEAD_NAMES = ['Dilnoza Rahimova', 'Sardor Aliyev', 'Malika Yusupova', 'Jasur Karimov', 'Nodira Tosheva'];
 
@@ -246,9 +256,9 @@ export class MockMetaClient implements MetaClient {
     return { campaignId };
   }
 
-  async searchCities(_ref: AdsRef, query: string) {
+  async searchLocations(_ref: AdsRef, query: string): Promise<GeoLocationDto[]> {
     const q = query.toLowerCase();
-    return MOCK_CITIES.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 10);
+    return MOCK_LOCATIONS.filter((c) => c.name.toLowerCase().includes(q) || c.key.toLowerCase() === q).slice(0, 10);
   }
 
   async listLeadAds(page: IgAccountRef, since: Date): Promise<LeadAdItem[]> {

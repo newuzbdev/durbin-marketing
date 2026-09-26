@@ -127,8 +127,23 @@ describe('Facebook Ads (e2e, mock)', () => {
     const created = await http().post('/api/ads/campaigns').set(as(a)).send(campaignBody()).expect(201);
     expect(created.body).toMatchObject({ name: 'Kuzgi qabul', status: 'PAUSED', objective: 'OUTCOME_TRAFFIC', dailyBudget: 10_000_000, spend: 0 });
 
-    const cities = await http().get('/api/ads/cities?q=sam').set(as(a)).expect(200);
-    expect(cities.body[0]).toMatchObject({ name: 'Samarqand' });
+    const cities = await http().get('/api/ads/locations?q=sam').set(as(a)).expect(200);
+    expect(cities.body[0]).toMatchObject({ type: 'city', name: 'Samarqand', countryCode: 'UZ' });
+    const countries = await http().get('/api/ads/locations?q=united').set(as(a)).expect(200);
+    expect(countries.body.map((l: { key: string }) => l.key)).toEqual(['US', 'AE']);
+
+    // Xorijiy auditoriya: davlatlar; noto'g'ri kod — 400
+    const abroad = await http()
+      .post('/api/ads/campaigns')
+      .set(as(a))
+      .send(campaignBody({ name: 'Xorij', audience: { ageMin: 20, ageMax: 40, countries: ['US', 'KZ'], cities: [] } }))
+      .expect(201);
+    expect(abroad.body.status).toBe('PAUSED');
+    await http()
+      .post('/api/ads/campaigns')
+      .set(as(a))
+      .send(campaignBody({ audience: { ageMin: 20, ageMax: 40, countries: ['usa'] } }))
+      .expect(400);
   });
 
   it('Lead Ads → FB_ADS lidlar; reklama klik maqsadi hisoblanadi', async () => {

@@ -275,7 +275,9 @@ export const createCampaignSchema = z
       ageMin: z.number().int().min(13).max(65).default(18),
       ageMax: z.number().int().min(13).max(65).default(45),
       genders: z.array(z.enum(['male', 'female'])).default([]),
-      /** Meta geolokatsiya kalitlari (GET /ads/cities); bo'sh — butun O'zbekiston */
+      /** Davlat kodlari (ISO, masalan "US", "KZ") — GET /ads/locations */
+      countries: z.array(z.string().regex(/^[A-Z]{2}$/)).max(25).default([]),
+      /** Meta shahar kalitlari — GET /ads/locations. Davlat ham, shahar ham bo'sh — butun O'zbekiston */
       cities: z.array(z.string().max(40)).max(25).default([]),
     }),
   })
@@ -289,7 +291,7 @@ export type CampaignStatusInput = z.infer<typeof campaignStatusSchema>;
 export const selectAdAccountSchema = z.object({ selectionId: z.string().min(1), adAccountId: z.string().min(1) });
 export type SelectAdAccountInput = z.infer<typeof selectAdAccountSchema>;
 
-export const citySearchQuerySchema = z.object({ q: z.string().trim().min(2).max(60) });
+export const locationSearchQuerySchema = z.object({ q: z.string().trim().min(2).max(60) });
 
 export interface AdAccountOptionDto {
   id: string;
@@ -297,10 +299,13 @@ export interface AdAccountOptionDto {
   currency: string;
 }
 
-export interface GeoCityDto {
+/** Reklama auditoriyasi uchun joylashuv: davlat (key = ISO kod) yoki shahar (key = Meta kaliti) */
+export interface GeoLocationDto {
+  type: 'country' | 'city';
   key: string;
   name: string;
   region: string | null;
+  countryCode: string;
 }
 
 export interface AdTotals {

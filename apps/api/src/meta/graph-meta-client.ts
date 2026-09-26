@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { Logger } from '@nestjs/common';
-import { toMinor, type CampaignObjective, type CampaignStatus, type IgMediaType } from '@durbin/shared';
+import { toMinor, type CampaignObjective, type CampaignStatus, type GeoLocationDto, type IgMediaType } from '@durbin/shared';
 import { addDays, eachDay, toIsoDate } from '../common/dates.js';
 import { mapLimit } from '../common/async.js';
 import {
@@ -450,16 +450,25 @@ export class GraphMetaClient implements MetaClient {
     return { campaignId: campaign.id };
   }
 
-  async searchCities(ref: AdsRef, query: string) {
-    const res = await this.get<GraphPage<{ key: string; name: string; region?: string }>>('/search', {
+  async searchLocations(ref: AdsRef, query: string): Promise<GeoLocationDto[]> {
+    const res = await this.get<
+      GraphPage<{ key: string; name: string; type: string; region?: string; country_code?: string }>
+    >('/search', {
       access_token: ref.accessToken,
       type: 'adgeolocation',
-      location_types: JSON.stringify(['city']),
-      country_code: 'UZ',
+      location_types: JSON.stringify(['country', 'city']),
       q: query,
       limit: 10,
     });
-    return res.data.map((c) => ({ key: c.key, name: c.name, region: c.region ?? null }));
+    return res.data
+      .filter((l) => l.type === 'country' || l.type === 'city')
+      .map((l) => ({
+        type: l.type as 'country' | 'city',
+        key: l.key,
+        name: l.name,
+        region: l.region ?? null,
+        countryCode: l.country_code ?? (l.type === 'country' ? l.key : ''),
+      }));
   }
 
   async listLeadAds(page: IgAccountRef, since: Date): Promise<LeadAdItem[]> {
@@ -606,7 +615,7 @@ export function adSetBody(campaignId: string, p: CreateCampaignParams): Record<s
     end_time: p.endTime.toISOString(),
     status: 'PAUSED',
     targeting: {
-      geo_locations: p.cityKeys.length ? { cities: p.cityKeys.map((key) => ({ key })) } : { countries: ['UZ'] },
+      geo_locations: geoLocations(p.countryCodes, p.cityKeys),
       age_min: p.ageMin,
       age_max: p.ageMax,
       // Ikkala jins yoki bo'sh — hammasi (Meta'da genders berilmaydi)
@@ -615,6 +624,15 @@ export function adSetBody(campaignId: string, p: CreateCampaignParams): Record<s
     },
     ...OPTIMIZATION[p.objective],
     ...(p.objective === 'OUTCOME_LEADS' && p.pageId ? { promoted_object: { page_id: p.pageId } } : {}),
+  };
+}
+
+/** Davlat ham, shahar ham tanlanmasa — butun O'zbekiston */
+export function geoLocations(countryCodes: string[], cityKeys: string[]): Record<string, unknown> {
+  if (!countryCodes.length && !cityKeys.length) return { countries: ['UZ'] };
+  return {
+    ...(countryCodes.length ? { countries: countryCodes } : {}),
+    ...(cityKeys.length ? { cities: cityKeys.map((key) => ({ key })) } : {}),
   };
 }
 

@@ -6,7 +6,7 @@ import type {
   AdCampaignDto,
   AdsOverviewDto,
   CreateCampaignInput,
-  GeoCityDto,
+  GeoLocationDto,
   Period,
 } from '@durbin/shared';
 import { api } from '@/lib/api';
@@ -103,11 +103,11 @@ export function useCreateCampaign() {
   });
 }
 
-export function useCitySearch(q: string) {
+export function useLocationSearch(q: string) {
   const s = useSchoolKey();
   return useQuery({
-    queryKey: ['ads', s, 'cities', q],
-    queryFn: () => api<GeoCityDto[]>(`/ads/cities?q=${encodeURIComponent(q)}`),
+    queryKey: ['ads', s, 'locations', q],
+    queryFn: () => api<GeoLocationDto[]>(`/ads/locations?q=${encodeURIComponent(q)}`),
     enabled: q.trim().length >= 2,
     staleTime: Infinity,
   });

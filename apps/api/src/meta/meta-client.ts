@@ -1,4 +1,4 @@
-import type { CampaignObjective, CampaignStatus, IgMediaType, PostType } from '@durbin/shared';
+import type { CampaignObjective, CampaignStatus, GeoLocationDto, IgMediaType, PostType } from '@durbin/shared';
 
 // Meta Graph API ustidagi abstraksiya. Ikkita implementatsiya:
 //  - GraphMetaClient  (META_MODE=live) — haqiqiy Graph API
@@ -120,6 +120,8 @@ export interface CreateCampaignParams {
   ageMin: number;
   ageMax: number;
   genders: ('male' | 'female')[];
+  /** ISO davlat kodlari */
+  countryCodes: string[];
   cityKeys: string[];
   /** OUTCOME_LEADS uchun — lid formasi shu sahifaniki bo'ladi */
   pageId: string | null;
@@ -182,7 +184,8 @@ export interface MetaClient {
   setCampaignStatus(ref: AdsRef, campaignId: string, status: 'ACTIVE' | 'PAUSED'): Promise<void>;
   /** Kampaniya + ad set (reklamasiz), ikkalasi ham PAUSED */
   createCampaign(ref: AdsRef, params: CreateCampaignParams): Promise<{ campaignId: string }>;
-  searchCities(ref: AdsRef, query: string): Promise<{ key: string; name: string; region: string | null }[]>;
+  /** Davlatlar va shaharlar (butun dunyo) */
+  searchLocations(ref: AdsRef, query: string): Promise<GeoLocationDto[]>;
   /** Sahifaning Lead Ads formalaridan `since`dan keyingi lidlar (sahifa tokeni bilan) */
   listLeadAds(page: IgAccountRef, since: Date): Promise<LeadAdItem[]>;
 }

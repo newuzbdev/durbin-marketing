@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { InfoIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { CAMPAIGN_OBJECTIVES, toMinor, type CampaignObjective, type GeoCityDto } from '@durbin/shared';
+import { CAMPAIGN_OBJECTIVES, toMinor, type CampaignObjective, type GeoLocationDto } from '@durbin/shared';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ApiError } from '@/lib/api';
 import { fmtMoney } from '@/lib/format';
-import { useCitySearch, useCreateCampaign } from '@/lib/queries/ads';
+import { useCreateCampaign, useLocationSearch } from '@/lib/queries/ads';
 import { uz } from '@/messages/uz';
 
 const t = uz.ads;
@@ -50,7 +50,7 @@ function CampaignForm({ currency, onDone }: { currency: string; onDone: () => vo
   const [ageMin, setAgeMin] = useState('25');
   const [ageMax, setAgeMax] = useState('55');
   const [gender, setGender] = useState<Gender>('all');
-  const [cities, setCities] = useState<GeoCityDto[]>([]);
+  const [locations, setLocations] = useState<GeoLocationDto[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const daily = Number(budget);
@@ -78,7 +78,8 @@ function CampaignForm({ currency, onDone }: { currency: string; onDone: () => vo
           ageMin: min,
           ageMax: max,
           genders: gender === 'all' ? [] : [gender],
-          cities: cities.map((c) => c.key),
+          countries: locations.filter((l) => l.type === 'country').map((l) => l.key),
+          cities: locations.filter((l) => l.type === 'city').map((l) => l.key),
         },
       });
       toast.success(t.form.created);
@@ -184,7 +185,7 @@ function CampaignForm({ currency, onDone }: { currency: string; onDone: () => vo
             ))}
           </ToggleGroup>
         </div>
-        <CityPicker value={cities} onChange={setCities} />
+        <LocationPicker value={locations} onChange={setLocations} />
       </fieldset>
 
       <p className="text-muted-foreground flex items-start gap-2 rounded-lg border border-dashed p-3 text-xs">
@@ -209,11 +210,18 @@ function CampaignForm({ currency, onDone }: { currency: string; onDone: () => vo
 }
 
 /** Meta geolokatsiya qidiruvi — tanlanganlar chip ko'rinishida */
-function CityPicker({ value, onChange }: { value: GeoCityDto[]; onChange: (v: GeoCityDto[]) => void }) {
+/** Davlat tanlansa, uning ichidagi shaharlar olib tashlanadi — Meta bir-birini qoplaydigan joylashuvlarni rad etadi */
+function addLocation(list: GeoLocationDto[], loc: GeoLocationDto): GeoLocationDto[] {
+  if (loc.type === 'country') return [...list.filter((l) => l.countryCode !== loc.key || l.type === 'country'), loc];
+  if (list.some((l) => l.type === 'country' && l.key === loc.countryCode)) return list;
+  return [...list, loc];
+}
+
+function LocationPicker({ value, onChange }: { value: GeoLocationDto[]; onChange: (v: GeoLocationDto[]) => void }) {
   const id = useId();
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
-  const results = useCitySearch(query);
+  const results = useLocationSearch(query);
 
   // Har bir harfda so'rov yubormaslik uchun
   useEffect(() => {
@@ -231,6 +239,7 @@ function CityPicker({ value, onChange }: { value: GeoCityDto[]; onChange: (v: Ge
           {value.map((c) => (
             <li key={c.key} className="bg-muted inline-flex items-center gap-1 rounded-md py-0.5 pr-0.5 pl-2 text-xs">
               {c.name}
+              {c.type === 'country' && <span className="text-muted-foreground">({t.form.locationTypes.country})</span>}
               <button
                 type="button"
                 aria-label={t.form.cityRemove(c.name)}
@@ -256,13 +265,20 @@ function CityPicker({ value, onChange }: { value: GeoCityDto[]; onChange: (v: Ge
                 type="button"
                 className="hover:bg-muted w-full px-3 py-1.5 text-left text-sm"
                 onClick={() => {
-                  onChange([...value, c]);
+                  onChange(addLocation(value, c));
                   setInput('');
                   setQuery('');
                 }}
               >
-                {c.name}
-                {c.region && <span className="text-muted-foreground"> · {c.region}</span>}
+                <span className="flex items-center justify-between gap-2">
+                  <span>
+                    {c.name}
+                    {(c.region || c.type === 'city') && (
+                      <span className="text-muted-foreground"> · {[c.region, c.countryCode].filter(Boolean).join(', ')}</span>
+                    )}
+                  </span>
+                  <span className="text-muted-foreground shrink-0 text-xs">{t.form.locationTypes[c.type]}</span>
+                </span>
               </button>
             </li>
           ))}

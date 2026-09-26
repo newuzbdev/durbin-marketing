@@ -1,5 +1,5 @@
 import { currencyOffset, fromMinor, toMinor } from '@durbin/shared';
-import { adSetBody } from '../meta/graph-meta-client.js';
+import { adSetBody, geoLocations } from '../meta/graph-meta-client.js';
 import type { CreateCampaignParams } from '../meta/meta-client.js';
 import { totals } from './ads.service.js';
 
@@ -12,6 +12,7 @@ const base: CreateCampaignParams = {
   ageMin: 25,
   ageMax: 45,
   genders: [],
+  countryCodes: [],
   cityKeys: [],
   pageId: 'page-1',
 };
@@ -61,5 +62,13 @@ describe('totals', () => {
     );
     expect(t).toEqual({ spend: 150, clicks: 33, impressions: 3000, reach: 1800, leads: 2, ctr: 1.1 });
     expect(totals([], null)).toMatchObject({ ctr: 0, reach: null });
+  });
+});
+
+describe('geoLocations', () => {
+  it('bo‘sh — O‘zbekiston; davlatlar va shaharlar birga', () => {
+    expect(geoLocations([], [])).toEqual({ countries: ['UZ'] });
+    expect(geoLocations(['US', 'KZ'], [])).toEqual({ countries: ['US', 'KZ'] });
+    expect(geoLocations(['KZ'], ['2555335'])).toEqual({ countries: ['KZ'], cities: [{ key: '2555335' }] });
   });
 });

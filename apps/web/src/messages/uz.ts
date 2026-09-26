@@ -283,9 +283,10 @@ export const uz = {
       ageTo: 'gacha',
       gender: 'Jins',
       genders: { all: 'Hammasi', female: 'Ayollar', male: 'Erkaklar' },
-      cities: 'Shaharlar',
-      citiesHint: "Bo'sh qoldirilsa — butun O'zbekiston",
-      citySearch: 'Shahar qidirish...',
+      cities: 'Joylashuv (davlat yoki shahar)',
+      citiesHint: "Istalgan davlat yoki shahar (masalan: USA, Kazakhstan, Dubai). Bo'sh qoldirilsa — butun O'zbekiston",
+      citySearch: 'Davlat yoki shahar qidirish...',
+      locationTypes: { country: 'Davlat', city: 'Shahar' },
       cityRemove: (name: string) => `${name} ni olib tashlash`,
       noCities: 'Topilmadi',
       pausedNote:

@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, ServiceUnav
 import { z } from 'zod';
 import {
   campaignStatusSchema,
-  citySearchQuerySchema,
+  locationSearchQuerySchema,
   createCampaignSchema,
   periodQuerySchema,
   type CampaignStatusInput,
@@ -15,7 +15,7 @@ import { ZodPipe } from '../common/zod.pipe.js';
 import { AdsService } from './ads.service.js';
 import { AdsSyncService } from './ads-sync.service.js';
 
-type CitySearchQuery = z.infer<typeof citySearchQuerySchema>;
+type LocationSearchQuery = z.infer<typeof locationSearchQuerySchema>;
 
 @Controller('ads')
 @UseGuards(SchoolGuard)
@@ -55,9 +55,12 @@ export class AdsController {
     return this.ads.create(school.id, body);
   }
 
-  @Get('cities')
+  @Get('locations')
   @Roles('OWNER', 'MANAGER')
-  cities(@CurrentSchool() school: SchoolContext, @Query(new ZodPipe(citySearchQuerySchema)) q: CitySearchQuery) {
-    return this.ads.cities(school.id, q.q);
+  locations(
+    @CurrentSchool() school: SchoolContext,
+    @Query(new ZodPipe(locationSearchQuerySchema)) q: LocationSearchQuery,
+  ) {
+    return this.ads.locations(school.id, q.q);
   }
 }
