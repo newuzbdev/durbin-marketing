@@ -6,6 +6,7 @@ import { MarketingSidebar } from '@/components/marketing-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { session } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 export default function MarketingLayout({ children }: LayoutProps<'/marketing'>) {
@@ -13,7 +14,11 @@ export default function MarketingLayout({ children }: LayoutProps<'/marketing'>)
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !me) router.replace('/login');
+    if (isLoading || me) return;
+    // Sahifa to'liq yuklanganda (masalan, Facebook OAuth'dan qaytganda) birinchi render server qiymati bilan
+    // bo'ladi — hasTokens hali false. Shuning uchun localStorage'ning o'zi tekshiriladi, aks holda
+    // tizimga kirgan foydalanuvchi ham /login ga otib yuboriladi.
+    if (!session.hasTokens()) router.replace('/login');
   }, [isLoading, me, router]);
 
   if (!me) {
