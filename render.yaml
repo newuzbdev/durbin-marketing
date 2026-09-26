@@ -5,7 +5,8 @@ services:
     name: durbin-api
     runtime: node
     plan: free
-    region: frankfurt
+    # Neon loyihasi AWS us-east-2 (Ohio) da — API bazaga yaqin bo'lsin
+    region: ohio
     buildCommand: >-
       corepack enable &&
       pnpm install --frozen-lockfile &&

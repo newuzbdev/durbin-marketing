@@ -13,8 +13,8 @@ Nega API Vercel'da emas: API doimiy ishlaydigan server — har daqiqalik auto-pu
 
 ## 1. Neon (Postgres)
 
-1. neon.tech → GitHub bilan kiring → **New project** (region: **Europe — Frankfurt**).
-2. **Connection string** → **Direct connection** (pooler'siz) ni tanlang, `?sslmode=require` bilan nusxalang.
+1. neon.tech → GitHub bilan kiring → **New project** (region: Render bilan bir xil — hozir **AWS US East 2 (Ohio)**).
+2. **Connection string** → **Direct connection** (pooler'siz) ni tanlang. Oxiridagi parametrlarni `?sslmode=verify-full` ga almashtiring (`channel_binding` ni olib tashlang).
    Bu `DATABASE_URL`.
 
 ## 2. Render (API)
