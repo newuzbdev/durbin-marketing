@@ -42,7 +42,7 @@ export default function GoalsPage() {
   const current = goals.data?.filter((g) => g.status === 'active' || g.status === 'upcoming') ?? [];
   const finished = goals.data?.filter((g) => g.status === 'achieved' || g.status === 'missed') ?? [];
 
-  const grid = (list: GoalDto[], empty: string) =>
+  const grid = (list: GoalDto[], empty: string, withCta = false) =>
     goals.isLoading ? (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 3 }, (_, i) => (
@@ -65,6 +65,11 @@ export default function GoalsPage() {
       <div className="text-muted-foreground flex min-h-40 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-6 text-center text-sm">
         <TargetIcon className="size-6" aria-hidden />
         {empty}
+        {withCta && canManage && (
+          <Button variant="outline" size="sm" onClick={() => setForm({ open: true, goal: null })}>
+            <PlusIcon aria-hidden /> {t.newGoal}
+          </Button>
+        )}
       </div>
     );
 
@@ -75,14 +80,9 @@ export default function GoalsPage() {
         description={t.description}
         actions={
           canManage && (
-            <>
-              <Button variant="outline" onClick={() => setLeadOpen(true)}>
-                <PlusIcon aria-hidden /> {t.addLead}
-              </Button>
-              <Button onClick={() => setForm({ open: true, goal: null })}>
-                <PlusIcon aria-hidden /> {t.newGoal}
-              </Button>
-            </>
+            <Button onClick={() => setForm({ open: true, goal: null })}>
+              <PlusIcon aria-hidden /> {t.newGoal}
+            </Button>
           )
         }
       />
@@ -96,12 +96,15 @@ export default function GoalsPage() {
             {t.tabs.finished} {goals.data && <span className="text-muted-foreground tabular-nums">{finished.length}</span>}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="current">{grid(current, t.empty)}</TabsContent>
+        <TabsContent value="current">{grid(current, t.empty, true)}</TabsContent>
         <TabsContent value="finished">{grid(finished, t.emptyFinished)}</TabsContent>
       </Tabs>
 
-      <LeadSourcesCard canManage={canManage} />
-      <LeadsCard canManage={canManage} />
+      {/* Katta ekranda: lidlar jadvali chapda, manbalar o'ngda */}
+      <div className="grid items-start gap-4 xl:grid-cols-3">
+        <LeadsCard canManage={canManage} onAdd={() => setLeadOpen(true)} className="min-w-0 xl:col-span-2" />
+        <LeadSourcesCard canManage={canManage} />
+      </div>
 
       <GoalFormDialog open={form.open} goal={form.goal} onOpenChange={(open) => setForm((f) => ({ ...f, open }))} />
       <LeadFormDialog open={leadOpen} onOpenChange={setLeadOpen} />
