@@ -301,11 +301,12 @@ export class GraphMetaClient implements MetaClient {
       init.body = JSON.stringify(body);
     }
     const res = await fetch(url, init);
-    const data = (await res.json().catch(() => ({}))) as { error?: { message: string; code?: number; error_subcode?: number } };
+    const data = (await res.json().catch(() => ({}))) as { error?: GraphError };
     if (!res.ok || data.error) {
       const e = data.error;
-      this.logger.warn(`IG ${method} ${path} → ${res.status}: ${e?.message ?? 'unknown'}`);
-      throw new MetaApiError(e?.message ?? `Instagram API ${res.status}`, res.status, e?.code, e?.error_subcode);
+      const message = graphErrorMessage(e) ?? `Instagram API ${res.status}`;
+      this.logger.warn(`IG ${method} ${path} → ${res.status}: ${message}`);
+      throw new MetaApiError(message, res.status, e?.code, e?.error_subcode);
     }
     return data as T;
   }
@@ -565,16 +566,28 @@ export class GraphMetaClient implements MetaClient {
       init.body = JSON.stringify(body);
     }
     const res = await fetch(url, init);
-    const data = (await res.json().catch(() => ({}))) as {
-      error?: { message: string; code?: number; error_subcode?: number };
-    };
+    const data = (await res.json().catch(() => ({}))) as { error?: GraphError };
     if (!res.ok || data.error) {
       const e = data.error;
-      this.logger.warn(`Graph ${method} ${path} → ${res.status}: ${e?.message ?? 'unknown'}`);
-      throw new MetaApiError(e?.message ?? `Graph API ${res.status}`, res.status, e?.code, e?.error_subcode);
+      const message = graphErrorMessage(e) ?? `Graph API ${res.status}`;
+      this.logger.warn(`Graph ${method} ${path} → ${res.status} (${e?.code ?? '-'}/${e?.error_subcode ?? '-'}): ${message}`);
+      throw new MetaApiError(message, res.status, e?.code, e?.error_subcode);
     }
     return data as T;
   }
+}
+
+interface GraphError {
+  message: string;
+  code?: number;
+  error_subcode?: number;
+  error_user_title?: string;
+  error_user_msg?: string;
+}
+
+/** "Invalid parameter" kabi umumiy matn o'rniga Meta'ning foydalanuvchiga mo'ljallangan aniq sababi */
+export function graphErrorMessage(e: GraphError | undefined): string | undefined {
+  return e ? e.error_user_msg || e.error_user_title || e.message : undefined;
 }
 
 /** Meta Batch API chegarasi */

@@ -22,6 +22,8 @@ const REACH_TTL_MS = 10 * 60_000;
 /** Maktab vaqt zonasi hali qo'llanmaydi — kampaniya sanalari Toshkent vaqtida */
 const TZ = '+05:00';
 const START_BUFFER_MS = 10 * 60_000;
+/** Meta: sahifa Lead Generation Terms of Service'ni qabul qilmagan */
+const LEADGEN_TOS_SUBCODE = 1815089;
 
 @Injectable()
 export class AdsService {
@@ -177,6 +179,12 @@ export class AdsService {
       if (err instanceof MetaApiError) {
         if (err.isAuthError) {
           throw new ConflictException("Reklama akkaunti ruxsati tugagan — Facebook Ads bo'limida qayta ulang");
+        }
+        if (err.subcode === LEADGEN_TOS_SUBCODE) {
+          throw new BadRequestException(
+            "Facebook sahifangiz Lead Ads shartlarini hali qabul qilmagan. https://www.facebook.com/ads/leadgen/tos " +
+              "sahifasida maktab sahifasini tanlab, shartlarni qabul qiling va qayta urinib ko'ring",
+          );
         }
         throw new BadRequestException(`Meta xatosi: ${err.message}`);
       }

@@ -1,5 +1,5 @@
 import { currencyOffset, fromMinor, toMinor } from '@durbin/shared';
-import { adSetBody, geoLocations } from '../meta/graph-meta-client.js';
+import { adSetBody, geoLocations, graphErrorMessage } from '../meta/graph-meta-client.js';
 import type { CreateCampaignParams } from '../meta/meta-client.js';
 import { totals } from './ads.service.js';
 
@@ -70,5 +70,16 @@ describe('geoLocations', () => {
     expect(geoLocations([], [])).toEqual({ countries: ['UZ'] });
     expect(geoLocations(['US', 'KZ'], [])).toEqual({ countries: ['US', 'KZ'] });
     expect(geoLocations(['KZ'], ['2555335'])).toEqual({ countries: ['KZ'], cities: [{ key: '2555335' }] });
+  });
+});
+
+describe('graphErrorMessage', () => {
+  it('Meta’ning aniq foydalanuvchi xabarini "Invalid parameter" dan ustun qo‘yadi', () => {
+    expect(
+      graphErrorMessage({ message: 'Invalid parameter', code: 100, error_user_msg: 'Page must accept Lead Gen TOS' }),
+    ).toBe('Page must accept Lead Gen TOS');
+    expect(graphErrorMessage({ message: 'Invalid parameter', error_user_title: 'Budget too low' })).toBe('Budget too low');
+    expect(graphErrorMessage({ message: 'Invalid parameter' })).toBe('Invalid parameter');
+    expect(graphErrorMessage(undefined)).toBeUndefined();
   });
 });
