@@ -199,7 +199,7 @@ function AdsView() {
           </div>
 
           {data ? (
-            <CampaignsTable campaigns={data.campaigns} currency={currency} canManage={canManage} />
+            <CampaignsTable campaigns={data.campaigns} currency={currency} canManage={canManage} adsManagerUrl={data.adsManagerUrl} />
           ) : (
             <Skeleton className="h-64" />
           )}

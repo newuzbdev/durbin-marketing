@@ -1,11 +1,11 @@
 'use client';
 
-import { PauseIcon, PlayIcon } from 'lucide-react';
+import { ExternalLinkIcon, ImagePlusIcon, PauseIcon, PlayIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AdCampaignDto, CampaignStatus } from '@durbin/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { fmtMoney, fmtNumber } from '@/lib/format';
 import { useSetCampaignStatus } from '@/lib/queries/ads';
@@ -26,10 +26,12 @@ export function CampaignsTable({
   campaigns,
   currency,
   canManage,
+  adsManagerUrl,
 }: {
   campaigns: AdCampaignDto[];
   currency: string;
   canManage: boolean;
+  adsManagerUrl: string;
 }) {
   const setStatus = useSetCampaignStatus();
 
@@ -37,6 +39,17 @@ export function CampaignsTable({
     <Card>
       <CardHeader>
         <CardTitle>{t.campaigns.title}</CardTitle>
+        <CardDescription>{t.campaigns.adsHint}</CardDescription>
+        <CardAction>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<a href={adsManagerUrl} target="_blank" rel="noreferrer" />}
+          >
+            {t.campaigns.openAdsManager} <ExternalLinkIcon aria-hidden />
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -52,7 +65,7 @@ export function CampaignsTable({
                 <TableHead className="text-right">{t.campaigns.reach}</TableHead>
                 <TableHead className="text-right">{t.campaigns.ctr}</TableHead>
                 <TableHead className="text-right">{t.campaigns.leads}</TableHead>
-                {canManage && <TableHead className="w-32" />}
+                <TableHead className="w-44" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -81,9 +94,19 @@ export function CampaignsTable({
                     <TableCell className="text-right tabular-nums">{c.reach === null ? '—' : fmtNumber(c.reach)}</TableCell>
                     <TableCell className="text-right tabular-nums">{c.ctr.toFixed(2)}%</TableCell>
                     <TableCell className="text-right tabular-nums">{fmtNumber(c.leads)}</TableCell>
-                    {canManage && (
-                      <TableCell className="text-right">
-                        {controllable && (
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          nativeButton={false}
+                          title={t.campaigns.addCreativeHint}
+                          render={<a href={c.adsManagerUrl} target="_blank" rel="noreferrer" />}
+                        >
+                          <ImagePlusIcon aria-hidden /> {t.campaigns.addCreative}
+                          <span className="sr-only"> — {t.campaigns.newTab}</span>
+                        </Button>
+                        {canManage && controllable && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -102,8 +125,8 @@ export function CampaignsTable({
                             {c.status === 'ACTIVE' ? t.campaigns.pause : t.campaigns.resume}
                           </Button>
                         )}
-                      </TableCell>
-                    )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 );
               })}

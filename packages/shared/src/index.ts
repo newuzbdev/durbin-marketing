@@ -327,11 +327,15 @@ export interface AdCampaignDto extends AdTotals {
   dailyBudget: number | null;
   startTime: string | null;
   stopTime: string | null;
+  /** Ads Manager'da shu campaignning reklamalari (rasm/video shu yerda qo'shiladi) */
+  adsManagerUrl: string;
 }
 
 export interface AdsOverviewDto {
   range: { from: string; to: string };
   currency: string;
+  /** Ads Manager'da reklama akkaunti */
+  adsManagerUrl: string;
   totals: AdTotals;
   previousTotals: AdTotals;
   campaigns: AdCampaignDto[];
