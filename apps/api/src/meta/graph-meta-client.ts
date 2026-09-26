@@ -181,6 +181,29 @@ export class GraphMetaClient implements MetaClient {
     });
   }
 
+  async getOnlineFollowers(account: IgAccountRef): Promise<Record<number, number> | null> {
+    const until = Math.floor(Date.now() / 1000);
+    const res = await this.get<GraphPage<{ values?: { value?: Record<string, number>; end_time: string }[] }>>(
+      `/${account.igUserId}/insights`,
+      { access_token: account.accessToken, metric: 'online_followers', period: 'lifetime', since: until - 7 * 86_400, until },
+    ).catch((err: unknown) => {
+      if (err instanceof MetaApiError && !err.isAuthError) return { data: [] };
+      throw err;
+    });
+    const days = (res.data[0]?.values ?? []).filter((v) => v.value && Object.keys(v.value).length);
+    if (!days.length) return null;
+    // Meta soatlarni Tinch okeani vaqtida (America/Los_Angeles) beradi — UTC ga o'tkaziladi
+    const sums = new Map<number, number>();
+    for (const day of days) {
+      const offset = pacificOffsetHours(new Date(day.end_time));
+      for (const [hour, count] of Object.entries(day.value!)) {
+        const utc = (((Number(hour) - offset) % 24) + 24) % 24;
+        sums.set(utc, (sums.get(utc) ?? 0) + count);
+      }
+    }
+    return Object.fromEntries([...sums].map(([h, total]) => [h, Math.round(total / days.length)]));
+  }
+
   async listMedia(account: IgAccountRef, limit: number): Promise<IgMediaItem[]> {
     type Insights = GraphPage<{ name: string; values?: { value: number }[] }>;
     type Media = {
@@ -428,7 +451,22 @@ export class GraphMetaClient implements MetaClient {
   }
 
   async setCampaignStatus(ref: AdsRef, campaignId: string, status: 'ACTIVE' | 'PAUSED') {
-    await this.request('POST', `/${campaignId}`, { access_token: ref.accessToken }, { status });
+    const auth = { access_token: ref.accessToken };
+    if (status === 'ACTIVE') {
+      // Durbin ad set'ni PAUSED yaratadi — faqat campaign yoqilsa reklama baribir ko'rsatilmaydi.
+      // To'xtatishda ad set'larga tegilmaydi: campaign o'chiq bo'lsa, ichidagilar ham ishlamaydi.
+      const adsets = await this.getAll<{ id: string; status: string }>(`/${campaignId}/adsets`, {
+        ...auth,
+        fields: 'id,status',
+        limit: 50,
+      });
+      await mapLimit(
+        adsets.filter((a) => a.status === 'PAUSED'),
+        3,
+        (a) => this.request('POST', `/${a.id}`, auth, { status: 'ACTIVE' }),
+      );
+    }
+    await this.request('POST', `/${campaignId}`, auth, { status });
   }
 
   async createCampaign(ref: AdsRef, p: CreateCampaignParams): Promise<{ campaignId: string }> {
@@ -575,6 +613,15 @@ export class GraphMetaClient implements MetaClient {
     }
     return data as T;
   }
+}
+
+/** America/Los_Angeles ning UTC dan farqi (soat): yozda -7, qishda -8 */
+export function pacificOffsetHours(at: Date): number {
+  const name = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', timeZoneName: 'shortOffset' })
+    .formatToParts(at)
+    .find((p) => p.type === 'timeZoneName')?.value; // masalan "GMT-7"
+  const m = name?.match(/GMT([+-]\d+)/);
+  return m ? Number(m[1]) : -8;
 }
 
 interface GraphError {

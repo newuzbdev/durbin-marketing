@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { MANUAL_LEAD_SOURCES } from '@durbin/shared';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -96,7 +97,7 @@ function LeadForm({ onDone }: { onDone: () => void }) {
         </div>
         <div className="grid gap-2">
           <Label htmlFor={`${ids}-date`}>{t.leads.date}</Label>
-          <Input id={`${ids}-date`} type="date" max={today} value={date} onChange={(e) => setDate(e.target.value)} required />
+          <DatePicker id={`${ids}-date`} max={today} value={date} onChange={setDate} />
         </div>
       </div>
 

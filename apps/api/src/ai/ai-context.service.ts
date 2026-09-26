@@ -1,10 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { fromMinor } from '@durbin/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { addDays, startOfUtcDay, toIsoDate } from '../common/dates.js';
 import { InstagramService } from '../instagram/instagram.service.js';
 import { AdsService } from '../ads/ads.service.js';
 import { GoalsService } from '../goals/goals.service.js';
+import { META_CLIENT, type MetaClient } from '../meta/meta-client.js';
+import { MetaConnectionsService } from '../meta/meta-connections.service.js';
 
 /** Toshkent vaqti (UTC+5) — post soatlari va hafta kunlari maktab nuqtai nazaridan */
 const TZ_OFFSET_MS = 5 * 3_600_000;
@@ -29,6 +31,8 @@ export class AiContextService {
     private readonly instagram: InstagramService,
     private readonly ads: AdsService,
     private readonly goals: GoalsService,
+    private readonly connections: MetaConnectionsService,
+    @Inject(META_CLIENT) private readonly meta: MetaClient,
   ) {}
 
   async build(schoolId: string): Promise<string> {
@@ -55,7 +59,7 @@ export class AiContextService {
     const conn = await this.prisma.metaConnection.findUnique({ where: { schoolId_type: { schoolId, type: 'INSTAGRAM' } } });
     if (!conn) return { ulangan: false };
 
-    const [ov7, ov30, top, media] = await Promise.all([
+    const [ov7, ov30, top, media, online] = await Promise.all([
       this.instagram.overview(schoolId, 'last_7d'),
       this.instagram.overview(schoolId, 'last_30d'),
       this.instagram.topMedia(schoolId, 'last_30d'),
@@ -63,6 +67,7 @@ export class AiContextService {
         where: { schoolId, postedAt: { gte: addDays(new Date(), -90) } },
         select: { type: true, postedAt: true, reach: true, likes: true },
       }),
+      this.onlineHours(schoolId),
     ]);
 
     return {
@@ -86,6 +91,7 @@ export class AiContextService {
           matn: (m.caption ?? '').slice(0, 100),
         };
       }),
+      auditoriya_onlayn_soatlari: online,
       postlar_90_kun: {
         soni: media.length,
         tur_boyicha: aggregate(media, (m) => m.type),
@@ -96,6 +102,18 @@ export class AiContextService {
         }),
       },
     };
+  }
+
+  /** Followerlar onlayn bo'ladigan soatlar (Toshkent vaqti), eng faol 3 tasi; Meta bermasa — izoh */
+  private async onlineHours(schoolId: string) {
+    const ref = await this.connections.instagramRef(schoolId);
+    const byUtc = ref ? await this.meta.getOnlineFollowers(ref).catch(() => null) : null;
+    if (!byUtc) return { malumot_yoq: "Meta bermadi (100 dan kam follower yoki yangi akkaunt) — postlar natijasiga qarab xulosa qil" };
+    const byLocal = Object.entries(byUtc)
+      .map(([h, n]) => ({ soat: (Number(h) + 5) % 24, onlayn: n }))
+      .sort((a, b) => a.soat - b.soat);
+    const top = [...byLocal].sort((a, b) => b.onlayn - a.onlayn).slice(0, 3).map((x) => `${x.soat}:00`);
+    return { eng_faol_soatlar: top, soatlar: byLocal };
   }
 
   private async adsContext(schoolId: string) {

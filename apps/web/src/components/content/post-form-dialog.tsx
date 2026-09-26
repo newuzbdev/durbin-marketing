@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -245,7 +246,7 @@ function PostForm({ post, day, onDone }: { post?: ContentPostDto | null; day?: D
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
           <Label htmlFor={`${ids}-date`}>{t.form.date}</Label>
-          <Input id={`${ids}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          <DatePicker id={`${ids}-date`} value={date} onChange={setDate} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor={`${ids}-time`}>{t.form.time}</Label>

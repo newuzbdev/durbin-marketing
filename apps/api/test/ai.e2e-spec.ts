@@ -94,6 +94,7 @@ describe('AI Yordamchi (e2e, soxta Replicate)', () => {
     expect(prompt).toContain('"ulangan":true');
     expect(prompt).toContain('demo_maktab');
     expect(prompt).toContain('100 lid');
+    expect(prompt).toContain('eng_faol_soatlar'); // mock: Toshkent 18–20
 
     const latest = await http().get('/api/ai/insights/ANALYSIS').set(as(a)).expect(200);
     expect(latest.body.items).toHaveLength(2);

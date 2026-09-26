@@ -29,7 +29,7 @@ const TASKS: Record<AiInsightKind, string> = {
   ANALYSIS: `Vazifa: ma'lumotlarni tahlil qilib, 4–6 ta qisqa xulosa yoz. Mavzular (ma'lumot bo'lganlari): shu hafta eng yaxshi ishlagan post; follower o'sishi sur'ati; reach o'zgarishi; reklama CTR va sarfi oldingi davrga nisbatan; maqsadlar reja bo'yicha ketyaptimi; kontent reja bajarilishi.
 Har bir xulosa: "title" — 3–6 so'zli sarlavha; "text" — 1–2 gap, raqamlar bilan, kerak bo'lsa bitta amaliy tavsiya; "tone" — "positive" (yaxshi yangilik), "negative" (muammo yoki pasayish) yoki "neutral".
 Format: {"items":[{"title":"...","text":"...","tone":"positive"}]}`,
-  CONTENT_SUGGESTION: `Vazifa: maqsadlar va statistikaga asoslanib kontent reja taklif qil — 4–6 ta band. Albatta qamrab ol: maqsadga yetish uchun haftasiga nechta post va ulardan nechtasi reel bo'lishi kerak (hisob-kitob bilan); qaysi kun va soatlarda chiqarish yaxshi (postlar_90_kun ma'lumotiga qarab); qaysi post turi yaxshi ishlayapti; keyingi haftaga 2–3 ta aniq post g'oyasi (maktab hayotidan).
+  CONTENT_SUGGESTION: `Vazifa: maqsadlar va statistikaga asoslanib kontent reja taklif qil — 4–6 ta band. Albatta qamrab ol: maqsadga yetish uchun haftasiga nechta post va ulardan nechtasi reel bo'lishi kerak (hisob-kitob bilan); qaysi kun va soatlarda chiqarish yaxshi (avval auditoriya_onlayn_soatlari — followerlar eng ko'p onlayn bo'ladigan soatlar; u bo'lmasa postlar_90_kun natijalari); qaysi post turi yaxshi ishlayapti; keyingi haftaga 2–3 ta aniq post g'oyasi (maktab hayotidan).
 Har bir band: "title" — qisqa sarlavha; "text" — 1–3 gap, aniq raqam va misol bilan; "tone" — "neutral" (yoki kuchli tomon bo'lsa "positive", xavf bo'lsa "negative").
 Format: {"items":[{"title":"...","text":"...","tone":"neutral"}]}`,
 };

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { GOAL_TYPES, type GoalDto, type GoalType } from '@durbin/shared';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -128,11 +129,11 @@ function GoalForm({ goal, onDone }: { goal?: GoalDto | null; onDone: () => void 
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-2">
             <Label htmlFor={`${ids}-start`}>{t.form.startDate}</Label>
-            <Input id={`${ids}-start`} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+            <DatePicker id={`${ids}-start`} value={startDate} onChange={setStartDate} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`${ids}-end`}>{t.form.endDate}</Label>
-            <Input id={`${ids}-end`} type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+            <DatePicker id={`${ids}-end`} min={startDate} value={endDate} onChange={setEndDate} />
           </div>
         </div>
         <div className="flex gap-2">

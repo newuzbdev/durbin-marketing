@@ -1,5 +1,5 @@
 import { currencyOffset, fromMinor, toMinor } from '@durbin/shared';
-import { adSetBody, geoLocations, graphErrorMessage } from '../meta/graph-meta-client.js';
+import { adSetBody, geoLocations, graphErrorMessage, pacificOffsetHours } from '../meta/graph-meta-client.js';
 import type { CreateCampaignParams } from '../meta/meta-client.js';
 import { totals } from './ads.service.js';
 
@@ -81,5 +81,12 @@ describe('graphErrorMessage', () => {
     expect(graphErrorMessage({ message: 'Invalid parameter', error_user_title: 'Budget too low' })).toBe('Budget too low');
     expect(graphErrorMessage({ message: 'Invalid parameter' })).toBe('Invalid parameter');
     expect(graphErrorMessage(undefined)).toBeUndefined();
+  });
+});
+
+describe('pacificOffsetHours', () => {
+  it('yozda -7, qishda -8 (Meta online_followers soatlari shu vaqtda)', () => {
+    expect(pacificOffsetHours(new Date('2026-07-01T12:00:00Z'))).toBe(-7);
+    expect(pacificOffsetHours(new Date('2026-01-15T12:00:00Z'))).toBe(-8);
   });
 });

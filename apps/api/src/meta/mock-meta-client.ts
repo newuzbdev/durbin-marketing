@@ -123,6 +123,18 @@ export class MockMetaClient implements MetaClient {
     });
   }
 
+  async getOnlineFollowers(account: IgAccountRef): Promise<Record<number, number>> {
+    // Toshkent kechqurun 18:00–20:00 (UTC 13–15) eng faol, tunda eng kam
+    const r = rng(`${account.igUserId}:online`);
+    return Object.fromEntries(
+      Array.from({ length: 24 }, (_, h) => {
+        const local = (h + 5) % 24;
+        const base = local >= 18 && local < 21 ? 420 : local >= 8 && local < 18 ? 250 : local >= 21 ? 180 : 40;
+        return [h, Math.round(base * (0.9 + r() * 0.2))];
+      }),
+    );
+  }
+
   async listMedia(account: IgAccountRef, limit: number): Promise<IgMediaItem[]> {
     const today = startOfUtcDay(new Date());
     const types: IgMediaType[] = ['REEL', 'IMAGE', 'CAROUSEL', 'REEL', 'VIDEO', 'IMAGE'];

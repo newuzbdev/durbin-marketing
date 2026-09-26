@@ -164,6 +164,11 @@ export interface MetaClient {
   getDailyNewFollowers(account: IgAccountRef, from: Date, to: Date): Promise<Record<string, number>>;
   /** Har bir kun uchun alohida qiymat, [from, to] ikkala chegara kiradi */
   getDailyMetrics(account: IgAccountRef, from: Date, to: Date): Promise<IgDailyMetrics[]>;
+  /**
+   * Followerlar qaysi soatlarda onlayn: UTC soat (0–23) → o'rtacha onlayn followerlar soni, oxirgi kunlar bo'yicha.
+   * Meta faqat 100+ followerli akkauntlarga beradi — ma'lumot bo'lmasa null.
+   */
+  getOnlineFollowers(account: IgAccountRef): Promise<Record<number, number> | null>;
   /** Oxirgi postlar, insights bilan */
   listMedia(account: IgAccountRef, limit: number): Promise<IgMediaItem[]>;
 
