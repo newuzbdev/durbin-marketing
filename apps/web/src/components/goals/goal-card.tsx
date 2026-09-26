@@ -2,7 +2,7 @@
 
 import { format, parseISO } from 'date-fns';
 import { uz as uzLocale } from 'date-fns/locale';
-import { CircleAlertIcon, EllipsisIcon, InfoIcon, PencilIcon, Trash2Icon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react';
+import { CalendarIcon, CircleAlertIcon, EllipsisIcon, InfoIcon, PencilIcon, Trash2Icon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react';
 import type { GoalDto, GoalStatus, LeadSource } from '@durbin/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,7 @@ export function GoalCard({ goal, canManage, onEdit, onDelete }: Props) {
         )}
       </CardHeader>
 
-      <CardContent className="grid gap-3">
+      <CardContent className="flex flex-1 flex-col gap-3">
         <div className="flex items-baseline justify-between gap-2">
           <p className="tabular-nums">
             <span className="text-2xl font-semibold tracking-tight">{fmtNumber(goal.current)}</span>
@@ -108,34 +108,26 @@ export function GoalCard({ goal, canManage, onEdit, onDelete }: Props) {
           )}
         </div>
 
-        <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-          <span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+          <span className="text-muted-foreground">
             {goal.status === 'achieved' ? t.done : t.remaining(fmtNumber(goal.remaining), unit)}
           </span>
-          <span>
-            {goal.status === 'upcoming'
-              ? t.startsIn(fmtGoalDay(goal.startDate))
-              : goal.status === 'active'
-                ? t.daysLeft(goal.daysLeft)
-                : t.ended(fmtGoalDay(goal.endDate))}
-          </span>
+          {goal.status === 'active' && (
+            <span
+              className={cn(
+                'flex items-center gap-1 text-xs font-medium',
+                behind > 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400',
+              )}
+            >
+              {behind > 0 ? (
+                <TrendingDownIcon className="size-3.5" aria-hidden />
+              ) : (
+                <TrendingUpIcon className="size-3.5" aria-hidden />
+              )}
+              {behind > 0 ? t.behind(fmtNumber(behind), unit) : t.onTrack}
+            </span>
+          )}
         </div>
-
-        {goal.status === 'active' && (
-          <p
-            className={cn(
-              'flex items-center gap-1 text-xs font-medium',
-              behind > 0 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400',
-            )}
-          >
-            {behind > 0 ? (
-              <TrendingDownIcon className="size-3.5" aria-hidden />
-            ) : (
-              <TrendingUpIcon className="size-3.5" aria-hidden />
-            )}
-            {behind > 0 ? t.behind(fmtNumber(behind), unit) : t.onTrack}
-          </p>
-        )}
 
         {goal.bySource && Object.keys(goal.bySource).length > 0 && (
           <ul className="flex flex-wrap gap-1.5" aria-label={t.leads.source}>
@@ -161,9 +153,19 @@ export function GoalCard({ goal, canManage, onEdit, onDelete }: Props) {
           </p>
         )}
 
-        <p className="text-muted-foreground text-xs">
-          {fmtGoalDay(goal.startDate)} — {fmtGoalDay(goal.endDate)}
-        </p>
+        <div className="text-muted-foreground mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3 text-xs">
+          <span className="flex items-center gap-1">
+            <CalendarIcon className="size-3.5" aria-hidden />
+            {fmtGoalDay(goal.startDate)} — {fmtGoalDay(goal.endDate)}
+          </span>
+          <span>
+            {goal.status === 'upcoming'
+              ? t.startsIn(fmtGoalDay(goal.startDate))
+              : goal.status === 'active'
+                ? t.daysLeft(goal.daysLeft)
+                : t.ended(fmtGoalDay(goal.endDate))}
+          </span>
+        </div>
       </CardContent>
     </Card>
   );
