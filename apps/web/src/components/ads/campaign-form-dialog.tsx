@@ -69,7 +69,7 @@ function CampaignForm({ currency, onDone }: { currency: string; onDone: () => vo
     if (!(min >= 13 && max <= 65 && min <= max)) return setError(t.errors2.ages);
 
     try {
-      await create.mutateAsync({
+      const campaign = await create.mutateAsync({
         name: name.trim(),
         objective,
         dailyBudget: toMinor(daily, currency),
@@ -83,7 +83,14 @@ function CampaignForm({ currency, onDone }: { currency: string; onDone: () => vo
           cities: locations.filter((l) => l.type === 'city').map((l) => l.key),
         },
       });
-      toast.success(t.form.created);
+      toast.success(t.form.created, {
+        description: t.form.createdNext,
+        duration: 15_000,
+        action: {
+          label: uz.ads.campaigns.addCreative,
+          onClick: () => window.open(campaign.adsManagerUrl, '_blank', 'noopener,noreferrer'),
+        },
+      });
       onDone();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : uz.common.error);

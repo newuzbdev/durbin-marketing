@@ -64,6 +64,7 @@ export class AdsService {
       dailyBudget: c.dailyBudget,
       startTime: c.startTime?.toISOString() ?? null,
       stopTime: c.stopTime?.toISOString() ?? null,
+      adsManagerUrl: adsManagerUrl(ref.adAccountId, c.externalId),
       ...totals([current.get(c.id)].filter(isDefined), reach ? (reach.byCampaign[c.externalId] ?? 0) : null),
     }));
     // Faollari yuqorida, ichida — ko'p sarflangani birinchi
@@ -72,6 +73,7 @@ export class AdsService {
     return {
       range: { from: toIsoDate(range.from), to: toIsoDate(range.to) },
       currency: ref.currency,
+      adsManagerUrl: adsManagerUrl(ref.adAccountId),
       totals: totals([...current.values()], reach?.total ?? null),
       previousTotals: totals([...previous.values()], prevReach?.total ?? null),
       campaigns: rows,
@@ -134,6 +136,7 @@ export class AdsService {
       dailyBudget: c.dailyBudget,
       startTime: c.startTime?.toISOString() ?? null,
       stopTime: c.stopTime?.toISOString() ?? null,
+      adsManagerUrl: adsManagerUrl(ref.adAccountId, c.externalId),
       ...totals([], 0),
     };
   }
@@ -207,6 +210,18 @@ export function totals(rows: Sums[], reach: number | null): AdTotals {
     leads: sum('leads'),
     ctr: impressions ? Math.round((clicks / impressions) * 10_000) / 100 : 0,
   };
+}
+
+/**
+ * Ads Manager havolasi. Campaign berilsa — uning reklamalari ro'yxati ochiladi,
+ * u yerda "+ Create" bilan rasm/video, matn va lid formasi qo'shiladi.
+ */
+export function adsManagerUrl(adAccountId: string, campaignId?: string): string {
+  const act = adAccountId.replace(/^act_/, '');
+  const base = 'https://adsmanager.facebook.com/adsmanager/manage';
+  return campaignId
+    ? `${base}/ads?act=${act}&selected_campaign_ids=${encodeURIComponent(campaignId)}`
+    : `${base}/campaigns?act=${act}`;
 }
 
 function isDefined<T>(v: T | undefined): v is T {

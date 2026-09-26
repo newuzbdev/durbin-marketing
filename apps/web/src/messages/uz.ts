@@ -257,7 +257,11 @@ export const uz = {
       resume: 'Boshlash',
       paused: "Campaign to'xtatildi",
       resumed: 'Campaign ishga tushirildi',
-      openAdsManager: "Ads Manager'da ochish",
+      openAdsManager: 'Ads Manager',
+      adsHint: "Reklamaning o'zi (rasm yoki video, matn, lid formasi) Ads Manager'da qo'shiladi — \"Reklama qo'shish\" tugmasini bosing",
+      addCreative: "Reklama qo'shish",
+      addCreativeHint: "Ads Manager'da shu campaign ochiladi: + Create → rasm/video, matn va lid formasi → Publish",
+      newTab: 'yangi oynada ochiladi',
     },
     statuses: { ACTIVE: 'Faol', PAUSED: "To'xtatilgan", ARCHIVED: 'Arxivda', DELETED: "O'chirilgan" },
     objectives: {
@@ -299,6 +303,7 @@ export const uz = {
         "Campaign to'xtatilgan holatda yaratiladi va pul sarflanmaydi. Reklamaning o'zini (rasm, matn, havola) Ads Manager'da qo'shing, keyin shu yerda \"Boshlash\" tugmasini bosing.",
       create: 'Yaratish',
       created: "Campaign yaratildi (to'xtatilgan holatda)",
+      createdNext: "Endi Ads Manager'da reklamaning o'zini (rasm yoki video, matn, lid formasi) qo'shing, keyin \"Boshlash\"ni bosing",
     },
     errors2: {
       name: 'Nom kiriting',
