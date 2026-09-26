@@ -213,14 +213,14 @@ export function totals(rows: Sums[], reach: number | null): AdTotals {
 }
 
 /**
- * Ads Manager havolasi. Campaign berilsa — uning reklamalari ro'yxati ochiladi,
- * u yerda "+ Create" bilan rasm/video, matn va lid formasi qo'shiladi.
+ * Ads Manager havolasi. Campaign berilsa — Ads Manager'da campaign nomi bosilgandagi sahifa
+ * (shu campaignning ad set'lari) ochiladi. `ads` tab'i ad set tanlanmasa filtrni e'tiborsiz qoldiradi.
  */
 export function adsManagerUrl(adAccountId: string, campaignId?: string): string {
   const act = adAccountId.replace(/^act_/, '');
   const base = 'https://adsmanager.facebook.com/adsmanager/manage';
   return campaignId
-    ? `${base}/ads?act=${act}&selected_campaign_ids=${encodeURIComponent(campaignId)}`
+    ? `${base}/adsets?act=${act}&selected_campaign_ids=${encodeURIComponent(campaignId)}`
     : `${base}/campaigns?act=${act}`;
 }
 

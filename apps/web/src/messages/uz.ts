@@ -260,7 +260,8 @@ export const uz = {
       openAdsManager: 'Ads Manager',
       adsHint: "Reklamaning o'zi (rasm yoki video, matn, lid formasi) Ads Manager'da qo'shiladi — \"Reklama qo'shish\" tugmasini bosing",
       addCreative: "Reklama qo'shish",
-      addCreativeHint: "Ads Manager'da shu campaign ochiladi: + Create → rasm/video, matn va lid formasi → Publish",
+      addCreativeHint:
+        "Ads Manager'da shu campaign ochiladi: ad set nomini bosing → + Create → rasm/video, matn va lid formasi → Publish",
       newTab: 'yangi oynada ochiladi',
     },
     statuses: { ACTIVE: 'Faol', PAUSED: "To'xtatilgan", ARCHIVED: 'Arxivda', DELETED: "O'chirilgan" },
