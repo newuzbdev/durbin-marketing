@@ -91,8 +91,9 @@ Xabarlar alohida **Instagram Login** app orqali keladi:
    kategoriya, ikonka → **Publish** (Live rejim). **Development rejimida suhbatlar ham, webhook ham kelmaydi.**
 7. API'ni qayta ishga tushiring → Instagram → **Yangilash**. Suhbatlar, xabarlar va javob yuborish shu token orqali ishlaydi.
 
-> Hozircha `IG_LOGIN_TOKEN` bitta akkaunt uchun (sinov yo'li). Production'da har bir maktab
-> "Instagram Direct ulash" (Instagram Login OAuth) orqali o'z tokenini saqlashi kerak.
+> `IG_LOGIN_TOKEN` — sinov yo'li: bir nechta tester akkaunt bo'lsa, tokenlar vergul bilan yoziladi
+> (`IG_LOGIN_TOKEN="IGAA...,IGAA..."`); har bir maktabga o'z Instagram akkauntining tokeni tanlanadi.
+> Production'da har bir maktab "Instagram Direct ulash" (Instagram Login OAuth) orqali o'z tokenini saqlashi kerak.
 
 ## 7. App Review (hamma maktablar uchun ochish)
 

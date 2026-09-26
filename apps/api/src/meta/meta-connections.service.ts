@@ -208,22 +208,26 @@ export class MetaConnectionsService {
   }
 
   /**
-   * Sinov yo'li: `.env` dagi IG_LOGIN_TOKEN (Meta dashboard'da yaratilgan) — faqat o'sha akkauntga tegishli bo'lsa.
+   * Sinov yo'li: `.env` dagi IG_LOGIN_TOKEN (Meta dashboard'da yaratilgan, tester akkauntlar uchun).
+   * Bir nechta akkaunt bo'lsa — vergul bilan ajratiladi; har bir token egasi bo'yicha tanlanadi.
    * Production'da har bir maktab "Instagram Direct ulash" (Instagram Login OAuth) orqali o'z tokenini saqlaydi.
    */
-  private igLoginOwner: Promise<string | null> | null = null;
+  private igLoginTokens: Promise<Map<string, string>> | null = null;
 
   private async igLoginTokenFor(igUserId: string): Promise<string | undefined> {
-    const token = process.env.IG_LOGIN_TOKEN;
-    if (!token || this.meta.mode !== 'live') return undefined;
-    this.igLoginOwner ??= fetch(`https://graph.instagram.com/me?fields=user_id&access_token=${encodeURIComponent(token)}`)
-      .then((r) => r.json() as Promise<{ user_id?: string }>)
-      .then((me) => me.user_id ?? null)
-      .catch(() => {
-        this.igLoginOwner = null; // tarmoq xatosi — keyingi safar qayta tekshiriladi
-        return null;
-      });
-    return (await this.igLoginOwner) === igUserId ? token : undefined;
+    const tokens = (process.env.IG_LOGIN_TOKEN ?? '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (!tokens.length || this.meta.mode !== 'live') return undefined;
+    this.igLoginTokens ??= Promise.all(tokens.map(async (token) => [await igLoginOwner(token), token] as const)).then(
+      (pairs) => {
+        // Tarmoq xatosi bo'lsa — keyingi safar qayta tekshiriladi
+        if (pairs.some(([owner]) => owner === undefined)) this.igLoginTokens = null;
+        return new Map(pairs.filter((p): p is [string, string] => typeof p[0] === 'string'));
+      },
+    );
+    return (await this.igLoginTokens).get(igUserId);
   }
 
   private async saveInstagram(schoolId: string, account: InstagramAccount) {
@@ -271,5 +275,16 @@ export class MetaConnectionsService {
     const url = new URL(target === 'ADS' ? '/marketing/ads' : '/marketing/instagram', origin);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     return url.toString();
+  }
+}
+
+/** Token egasi (IG user id). Token yaroqsiz bo'lsa null, tarmoq xatosi bo'lsa undefined. */
+async function igLoginOwner(token: string): Promise<string | null | undefined> {
+  try {
+    const res = await fetch(`https://graph.instagram.com/me?fields=user_id&access_token=${encodeURIComponent(token)}`);
+    const me = (await res.json()) as { user_id?: string };
+    return me.user_id ?? null;
+  } catch {
+    return undefined;
   }
 }
