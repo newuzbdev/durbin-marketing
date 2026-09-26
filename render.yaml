@@ -1,0 +1,64 @@
+# Durbin API — Render Blueprint (bepul tarif). Qo'llanma: docs/deploy.md
+# Bepul server 15 daqiqa so'rovsiz uxlaydi — cron-job.org har 5 daqiqada /api/health ni chaqirib turadi.
+services:
+  - type: web
+    name: durbin-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: >-
+      corepack enable &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @durbin/shared build &&
+      pnpm --filter @durbin/api prisma:generate &&
+      pnpm --filter @durbin/api build
+    # Migratsiyalar har ishga tushishda qo'llanadi (yangi bo'lmasa — hech narsa qilmaydi)
+    startCommand: cd apps/api && npx prisma migrate deploy && node dist/main.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Neon — "Direct connection" (pooler'siz) URL, ?sslmode=require bilan
+      - key: DATABASE_URL
+        sync: false
+      # Vercel domeni, masalan https://durbin-marketing.vercel.app (vergul bilan bir nechta)
+      - key: WEB_ORIGIN
+        sync: false
+      # Render o'zi yaratadi: 256-bit base64 (ENCRYPTION_KEY 32 bayt talabiga mos)
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: META_WEBHOOK_VERIFY_TOKEN
+        generateValue: true
+      - key: META_MODE
+        value: live
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_GRAPH_VERSION
+        value: v24.0
+      # https://<render-domen>/api/meta/oauth/callback
+      - key: META_REDIRECT_URI
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        value: durbin-media
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_PUBLIC_URL
+        sync: false
+      - key: REPLICATE_API_TOKEN
+        sync: false
+      # Ixtiyoriy: Instagram Direct (Instagram Login app) — docs/meta-app-setup.md §6
+      - key: IG_LOGIN_TOKEN
+        sync: false
+      - key: IG_APP_SECRET
+        sync: false

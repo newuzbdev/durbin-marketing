@@ -14,9 +14,9 @@ Maqsadlar (goals with computed progress; leads entered manually, from Instagram 
 Facebook Ads (ad account OAuth, campaign/insight sync, pause/start, campaign + ad set creation, Lead Ads), and
 AI Yordamchi (analysis, content suggestions, scripts, chat — Claude Sonnet 5 via Replicate), and Dashboard
 (KPIs, charts, goals, this week's content; DB-only, no Meta calls). Instagram DMs come through a separate Instagram Login app (IG_LOGIN_TOKEN), see docs/meta-app-setup.md §6.
-Remaining: deploy + Meta App Review
+Deploy config: `render.yaml` (API) + `apps/web/vercel.json` (web).
 (`~/.claude/plans/durbin-marketing-bo-limi-keen-shell.md`). Meta App setup: `docs/meta-app-setup.md`;
-media storage (R2): `docs/content-plan-setup.md`.
+media storage (R2): `docs/content-plan-setup.md`; deploy (Vercel + Render + Neon, free): `docs/deploy.md`.
 
 **UI language is Uzbek (Latin).** All user-facing strings, including API error messages and code
 comments, are written in Uzbek.
