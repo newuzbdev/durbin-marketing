@@ -132,6 +132,12 @@ export const uz = {
       FAILED: 'Xatolik',
       MISSED: "O'tib ketdi",
     },
+    legend: {
+      title: 'Ranglar',
+      scheduled: 'Rejalashtirilgan',
+      published: 'Chiqarilgan',
+      failed: "O'tib ketdi yoki xatolik",
+    },
     stats: {
       title: (label: string) => `${label} statistikasi`,
       total: 'Rejalashtirilgan',

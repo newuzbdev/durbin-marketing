@@ -13,6 +13,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Calendar, rangeLabel, statsRange, visibleRange, type CalendarView } from '@/components/content/calendar';
 import { PostDetailsDialog } from '@/components/content/post-details-dialog';
 import { PostFormDialog } from '@/components/content/post-form-dialog';
+import { StatusLegend } from '@/components/content/post-chip';
 import { useAuth } from '@/lib/auth';
 import { fmtNumber } from '@/lib/format';
 import { useContentStats, usePosts } from '@/lib/queries/content';
@@ -131,6 +132,7 @@ function ContentView() {
           onShowWeek={(day) => navigate({ view: 'week', date: day })}
         />
       )}
+      <StatusLegend />
 
       <PostDetailsDialog
         post={openedPost}

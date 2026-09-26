@@ -18,23 +18,39 @@ import { uz } from '@/messages/uz';
 
 // Rang talabi: kulrang — rejalashtirilgan, yashil — chiqdi, qizil — o'tib ketdi yoki xato.
 // Rang yagona belgi bo'lmasligi uchun har bir holatda ikonka ham bor.
+const GRAY =
+  'bg-zinc-100 text-zinc-800 border-zinc-300 border-l-zinc-500 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700 dark:border-l-zinc-400';
+const GREEN =
+  'bg-emerald-100 text-emerald-900 border-emerald-300 border-l-emerald-600 dark:bg-emerald-950 dark:text-emerald-100 dark:border-emerald-800 dark:border-l-emerald-400';
+const RED =
+  'bg-red-100 text-red-900 border-red-300 border-l-red-600 dark:bg-red-950 dark:text-red-100 dark:border-red-800 dark:border-l-red-400';
+
 export const STATUS_STYLE: Record<PostStatus, { className: string; icon: React.ComponentType<{ className?: string }> }> = {
-  SCHEDULED: { className: 'bg-muted text-foreground border-border', icon: ClockIcon },
-  PUBLISHING: { className: 'bg-muted text-foreground border-border', icon: LoaderIcon },
-  PUBLISHED: {
-    className:
-      'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-100 dark:border-emerald-900',
-    icon: CheckIcon,
-  },
-  FAILED: {
-    className: 'bg-red-50 text-red-900 border-red-200 dark:bg-red-950/60 dark:text-red-100 dark:border-red-900',
-    icon: CircleAlertIcon,
-  },
-  MISSED: {
-    className: 'bg-red-50 text-red-900 border-red-200 dark:bg-red-950/60 dark:text-red-100 dark:border-red-900',
-    icon: CircleSlashIcon,
-  },
+  SCHEDULED: { className: GRAY, icon: ClockIcon },
+  PUBLISHING: { className: GRAY, icon: LoaderIcon },
+  PUBLISHED: { className: GREEN, icon: CheckIcon },
+  FAILED: { className: RED, icon: CircleAlertIcon },
+  MISSED: { className: RED, icon: CircleSlashIcon },
 };
+
+/** Kalendar ostidagi ranglar izohi */
+export function StatusLegend() {
+  const items = [
+    { className: GRAY, label: uz.content.legend.scheduled },
+    { className: GREEN, label: uz.content.legend.published },
+    { className: RED, label: uz.content.legend.failed },
+  ];
+  return (
+    <ul className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs" aria-label={uz.content.legend.title}>
+      {items.map((i) => (
+        <li key={i.label} className="flex items-center gap-1.5">
+          <span className={cn('h-3 w-4 rounded-sm border border-l-[3px]', i.className)} aria-hidden />
+          {i.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export const TYPE_ICON: Record<PostType, React.ComponentType<{ className?: string }>> = {
   IMAGE: ImageIcon,
@@ -65,7 +81,7 @@ export function PostChip({ post, onOpen }: { post: ContentPostDto; onOpen: (post
       }}
       title={`${fmtTime(post.scheduledAt)} · ${post.title} — ${uz.content.statuses[post.status]}`}
       className={cn(
-        'focus-visible:ring-ring/50 flex w-full min-w-0 items-center gap-1 rounded-md border px-1.5 py-1 text-left text-xs outline-none hover:brightness-95 focus-visible:ring-3 dark:hover:brightness-110',
+        'focus-visible:ring-ring/50 flex w-full min-w-0 items-center gap-1 rounded-md border border-l-[3px] px-1.5 py-1 text-left text-xs outline-none hover:brightness-95 focus-visible:ring-3 dark:hover:brightness-110',
         className,
       )}
     >
