@@ -8,7 +8,6 @@ services:
     # Neon loyihasi AWS us-east-2 (Ohio) da — API bazaga yaqin bo'lsin
     region: ohio
     buildCommand: >-
-      corepack enable &&
       pnpm install --frozen-lockfile &&
       pnpm --filter @durbin/shared build &&
       pnpm --filter @durbin/api prisma:generate &&
