@@ -9,7 +9,7 @@ import type {
   UploadRequestInput,
   UploadTicketDto,
 } from '@durbin/shared';
-import { api } from '@/lib/api';
+import { api, DEMO_MODE } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 export interface DateRange {
@@ -90,6 +90,10 @@ export function useMarkPublished() {
 
 /** Presigned URL olinadi va fayl brauzerdan to'g'ridan-to'g'ri saqlashga yuklanadi */
 export async function uploadMedia(file: File, onProgress: (pct: number) => void): Promise<UploadTicketDto['asset']> {
+  if (DEMO_MODE) {
+    onProgress(100);
+    return (await import('@/lib/demo')).demoAddAsset(file);
+  }
   const input: UploadRequestInput = {
     fileName: file.name,
     contentType: file.type as UploadRequestInput['contentType'],

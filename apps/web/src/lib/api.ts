@@ -75,7 +75,11 @@ async function refreshTokens(): Promise<boolean> {
   return refreshing;
 }
 
+/** NEXT_PUBLIC_DEMO_MODE=1 — backend'siz namoyish rejimi (lib/demo) */
+export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === '1';
+
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}, retry = true): Promise<T> {
+  if (DEMO_MODE) return (await import('./demo')).demoApi<T>(path, init);
   const headers = new Headers(init.headers);
   const access = read(ACCESS_KEY);
   if (access) headers.set('Authorization', `Bearer ${access}`);
